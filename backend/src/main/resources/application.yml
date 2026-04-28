@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: backend
+
+  # Pulls POSTGRES_* values from the repo-root .env when running from backend/.
+  # `optional:` means startup still works if .env is missing (e.g. CI), as long
+  # as the equivalent env vars are set. The [.properties] hint tells Spring to
+  # parse .env using Java properties syntax (KEY=value).
+  config:
+    import: optional:file:../.env[.properties]
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
