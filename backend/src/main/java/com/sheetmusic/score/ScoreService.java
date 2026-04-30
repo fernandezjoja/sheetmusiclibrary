@@ -1,8 +1,8 @@
 package com.sheetmusic.score;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +46,40 @@ public class ScoreService {
             score.setMsczPath(storage.store(mscz, FileType.MSCZ));
         }
         return repo.save(score);
+    }
+
+    /**
+     * Partial update: any non-null arg replaces the corresponding piece of the score.
+     * Old files are deleted only after the DB save succeeds, so a mid-flight failure
+     * leaves the original score intact (with at most an orphaned new file on disk).
+     */
+    @Transactional
+    public Score update(Long id, CreateScoreRequest meta, MultipartFile musicxml, MultipartFile pdf, MultipartFile mscz) {
+        Score score = repo.findById(id).orElseThrow(() -> new ScoreNotFoundException(id));
+        List<String> pathsToDelete = new ArrayList<>();
+
+        if (meta != null) {
+            score.setTitle(meta.title().trim());
+            score.setComposer(meta.composer() == null ? null : meta.composer().trim());
+            score.setTags(normalizeTags(meta.tags()));
+        }
+        if (musicxml != null && !musicxml.isEmpty()) {
+            pathsToDelete.add(score.getMusicxmlPath());
+            score.setMusicxmlPath(storage.store(musicxml, FileType.MUSICXML));
+        }
+        if (pdf != null && !pdf.isEmpty()) {
+            pathsToDelete.add(score.getPdfPath());
+            score.setPdfPath(storage.store(pdf, FileType.PDF));
+        }
+        if (mscz != null && !mscz.isEmpty()) {
+            pathsToDelete.add(score.getMsczPath());
+            score.setMsczPath(storage.store(mscz, FileType.MSCZ));
+        }
+
+        Score saved = repo.save(score);
+        // Old files removed only on success. delete() swallows missing-file errors.
+        pathsToDelete.forEach(storage::delete);
+        return saved;
     }
 
     private static List<String> normalizeTags(List<String> raw) {
