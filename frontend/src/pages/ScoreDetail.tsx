@@ -24,7 +24,7 @@ export default function ScoreDetail() {
     return (
       <div>
         <p role="alert">{error.status === 404 ? 'Score not found.' : `Error: ${error.message}`}</p>
-        <Link to="/">← Back to all scores</Link>
+        <Link to="/biblioteca">← Back to all scores</Link>
       </div>
     )
   }
@@ -46,11 +46,6 @@ export default function ScoreDetail() {
             Download PDF
           </a>
         )}
-        {score.musicxmlPath && (
-          <a href={api.musicxmlUrl(score.id)} target="_blank" rel="noreferrer">
-            View raw MusicXML
-          </a>
-        )}
       </div>
 
       {score.musicxmlPath ? (
@@ -61,9 +56,8 @@ export default function ScoreDetail() {
         </p>
       )}
 
-      <p style={{ marginTop: 24, display: 'flex', gap: 16 }}>
-        <Link to="/">← Back to all scores</Link>
-        <Link to={`/admin/edit/${score.id}`}>Edit (admin)</Link>
+      <p style={{ marginTop: 24 }}>
+        <Link to="/biblioteca">← Back to all scores</Link>
       </p>
     </article>
   )

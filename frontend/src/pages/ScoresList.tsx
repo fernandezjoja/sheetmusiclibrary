@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type Score } from '../api'
+import {
+  attributionParts,
+  freeFormTags,
+  liturgicalRoleParts,
+} from '../tags'
 
 export default function ScoresList() {
   const [scores, setScores] = useState<Score[] | null>(null)
@@ -16,17 +21,60 @@ export default function ScoresList() {
 
   return (
     <ul style={{ listStyle: 'none', padding: 0 }}>
-      {scores.map((s) => (
-        <li key={s.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-          <Link to={`/scores/${s.id}`}>{s.title}</Link>
-          {s.composer && <span> — {s.composer}</span>}
-          {s.tags.length > 0 && (
-            <span style={{ marginLeft: 12, fontSize: '0.85rem' }}>
-              {s.tags.map((t) => `#${t}`).join(' ')}
-            </span>
-          )}
-        </li>
-      ))}
+      {scores.map((s) => {
+        const attribution = attributionParts(s)
+        const liturgical = liturgicalRoleParts(s)
+        const freeForm = freeFormTags(s)
+        const hasSecondaryLine = liturgical.length > 0 || freeForm.length > 0
+
+        return (
+          <li
+            key={s.id}
+            style={{
+              padding: '10px 0',
+              borderBottom: '1px solid var(--border)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'baseline',
+                gap: 12,
+              }}
+            >
+              <Link to={`/scores/${s.id}`} style={{ fontWeight: 500 }}>
+                {s.title}
+              </Link>
+              {attribution.length > 0 && (
+                <span
+                  style={{
+                    color: 'var(--text)',
+                    fontSize: '0.95rem',
+                    textAlign: 'right',
+                  }}
+                >
+                  {attribution.join(' · ')}
+                </span>
+              )}
+            </div>
+            {hasSecondaryLine && (
+              <div
+                style={{
+                  marginTop: 4,
+                  color: 'var(--text)',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {liturgical.length > 0 && liturgical.join(' · ')}
+                {liturgical.length > 0 && freeForm.length > 0 && ' · '}
+                {freeForm.length > 0 &&
+                  freeForm.map((t) => `#${t}`).join(' ')}
+              </div>
+            )}
+          </li>
+        )
+      })}
     </ul>
   )
 }
