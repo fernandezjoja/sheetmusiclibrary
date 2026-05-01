@@ -26,7 +26,7 @@ type VoiceInfo = { label: string; muted: boolean; ref: Voice; color?: string }
 type PlaybackMode = 'piano' | 'choir'
 const PLAYBACK_MODES: { value: PlaybackMode; label: string; midiId: number }[] = [
   { value: 'piano', label: 'Piano', midiId: 0 },   // Acoustic Grand Piano
-  { value: 'choir', label: 'Choir', midiId: 52 },  // Choir Aahs
+  { value: 'choir', label: 'Coro', midiId: 52 },  // Choir Aahs
 ]
 const PLAYBACK_MODE_STORAGE_KEY = 'sml.playbackMode'
 
@@ -95,6 +95,182 @@ function buildClickableNotes(osmd: OpenSheetMusicDisplay): ClickableNote[] {
   return result
 }
 
+/** A stavenote SVG element + which voice index it belongs to, plus the
+ *  voice indices that share at least one pitch with this voice at the same
+ *  step. When `sharedWith` is non-empty and any of those voices is also
+ *  unmuted, we paint the element with a blend of the involved voice colors
+ *  so a unison reads as "both voices are here". */
+type NoteHighlight = {
+  el: SVGElement
+  voiceIndex: number
+  sharedWith: number[]
+}
+
+/** Average a set of #rrggbb colors in sRGB. Cheap enough for the few times
+ *  per playback iteration we'd ever call it. */
+function blendHexColors(colors: string[]): string {
+  if (colors.length === 0) return '#000000'
+  if (colors.length === 1) return colors[0]
+  let r = 0
+  let g = 0
+  let b = 0
+  for (const hex of colors) {
+    const c = hex.startsWith('#') ? hex.slice(1) : hex
+    r += parseInt(c.slice(0, 2), 16)
+    g += parseInt(c.slice(2, 4), 16)
+    b += parseInt(c.slice(4, 6), 16)
+  }
+  const n = colors.length
+  const toHex = (v: number) =>
+    Math.round(v / n)
+      .toString(16)
+      .padStart(2, '0')
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
+
+/**
+ * Walk the score and return a map: iteration step → [highlights at that step].
+ * Each highlight pairs a stavenote SVG element with the voice index it
+ * belongs to (matched by reference equality against the supplied VoiceInfo
+ * list).
+ *
+ * A note is registered at *every* step where it's still sounding (start step
+ * through end-of-duration), not just at its onset. This way, when the soprano
+ * advances to a new quarter, the alto's still-ringing half note keeps its
+ * highlight.
+ */
+function buildNoteHighlights(
+  osmd: OpenSheetMusicDisplay,
+  voices: VoiceInfo[],
+): Map<number, NoteHighlight[]> {
+  // First pass: walk a fresh iterator to capture each step's source timestamp
+  // (in fractions of a whole note) and the start step of every VoiceEntry.
+  const veToStep = new Map<VoiceEntry, number>()
+  const stepTimestamps: number[] = []
+  const iter = osmd.Sheet.MusicPartManager.getIterator()
+  let step = 0
+  while (!iter.EndReached) {
+    const ts = iter.CurrentSourceTimestamp
+    stepTimestamps[step] = ts ? ts.RealValue : step
+    const entries = iter.CurrentVoiceEntries as VoiceEntry[] | undefined
+    if (entries) {
+      for (const ve of entries) {
+        if (!veToStep.has(ve)) veToStep.set(ve, step)
+      }
+    }
+    iter.moveToNext()
+    step++
+  }
+  const totalSteps = stepTimestamps.length
+
+  // Second pass: collect per-voice "raw entries" with start step, end step,
+  // SVG element, and the set of pitches sounding (halfTone-based, skipping
+  // rests). A pitch set lets us detect unisons across voices later.
+  type RawEntry = {
+    el: SVGElement
+    voiceIndex: number
+    startStep: number
+    endStep: number
+    pitches: Set<number>
+  }
+  type VfBacked = { vfStaveNote?: { attrs?: { el?: SVGElement } } }
+  const rawEntries: RawEntry[] = []
+  const EPS = 1e-9
+
+  for (const row of osmd.GraphicSheet.MeasureList ?? []) {
+    for (const measure of row ?? []) {
+      if (!measure) continue
+      for (const se of measure.staffEntries ?? []) {
+        for (const gve of se.graphicalVoiceEntries ?? []) {
+          const sourceVE = gve.parentVoiceEntry
+          const voiceIndex = voices.findIndex((v) => v.ref === sourceVE.ParentVoice)
+          if (voiceIndex < 0) continue
+          const startStep = veToStep.get(sourceVE)
+          if (startStep === undefined) continue
+
+          const notes = sourceVE.Notes ?? []
+          if (notes.length === 0) continue
+
+          const pitches = new Set<number>()
+          let duration = 0
+          for (const n of notes) {
+            const maybe = n as {
+              isRest?: () => boolean
+              IsRest?: boolean
+              halfTone?: number
+              Length?: { RealValue?: number }
+            }
+            const isRest = (maybe.isRest?.() ?? maybe.IsRest) === true
+            if (!isRest && typeof maybe.halfTone === 'number') {
+              pitches.add(maybe.halfTone)
+            }
+            const len = maybe.Length?.RealValue ?? 0
+            if (len > duration) duration = len
+          }
+          // Skip rest-only entries — the rest symbol shouldn't pulse.
+          if (pitches.size === 0) continue
+          if (duration <= 0) continue
+
+          const el = (gve as unknown as VfBacked).vfStaveNote?.attrs?.el
+          if (!el) continue
+
+          const startTs = stepTimestamps[startStep] ?? 0
+          const endTs = startTs + duration
+          let endStep = startStep + 1
+          while (
+            endStep < totalSteps &&
+            stepTimestamps[endStep] < endTs - EPS
+          ) {
+            endStep++
+          }
+
+          rawEntries.push({ el, voiceIndex, startStep, endStep, pitches })
+        }
+      }
+    }
+  }
+
+  // Third pass: bucket entries by every step they're audible in, then for
+  // each step compute pairwise pitch overlaps to populate `sharedWith`.
+  const activeAtStep = new Map<number, RawEntry[]>()
+  for (const entry of rawEntries) {
+    for (let s = entry.startStep; s < entry.endStep; s++) {
+      if (!activeAtStep.has(s)) activeAtStep.set(s, [])
+      activeAtStep.get(s)!.push(entry)
+    }
+  }
+
+  const result = new Map<number, NoteHighlight[]>()
+  for (const [s, entries] of activeAtStep) {
+    const highlights: NoteHighlight[] = []
+    for (const entry of entries) {
+      const sharedWith: number[] = []
+      for (const other of entries) {
+        if (other === entry) continue
+        if (other.voiceIndex === entry.voiceIndex) continue
+        // Any pitch in common counts as a unison for highlighting purposes.
+        let overlaps = false
+        for (const p of other.pitches) {
+          if (entry.pitches.has(p)) {
+            overlaps = true
+            break
+          }
+        }
+        if (overlaps && !sharedWith.includes(other.voiceIndex)) {
+          sharedWith.push(other.voiceIndex)
+        }
+      }
+      highlights.push({
+        el: entry.el,
+        voiceIndex: entry.voiceIndex,
+        sharedWith,
+      })
+    }
+    result.set(s, highlights)
+  }
+  return result
+}
+
 // Hardcoded SATB labels and color codes assumed for 4-voice scores. Both
 // authoring shapes — closed-score (2 instruments × 2 voices) and open-score
 // (4 instruments × 1 voice) — traverse to the same order. Colors fill the
@@ -152,6 +328,7 @@ function buildVoiceInfos(instruments: Instrument[]): VoiceInfo[] {
 
 export default function ScorePlayer({ url }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const outerRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<PlaybackEngine | null>(null)
   const osmdRef = useRef<OpenSheetMusicDisplay | null>(null)
   const clickableNotesRef = useRef<ClickableNote[]>([])
@@ -159,6 +336,14 @@ export default function ScorePlayer({ url }: Props) {
   // undo the audio player's automatic cursor advance (which would put cursor
   // on the note *after* the one we landed on).
   const undoFirstAdvanceRef = useRef(false)
+  // Pre-computed (step → notes-to-highlight) map, plus the highlights that
+  // are currently painted (so we can clear them on the next iteration / on
+  // stop / when a voice is muted).
+  const noteHighlightsByStepRef = useRef<Map<number, NoteHighlight[]>>(new Map())
+  const activeHighlightsRef = useRef<NoteHighlight[]>([])
+  // The voices state is captured in the ITERATION closure when it's
+  // registered. To read live mute state at iteration time we mirror it here.
+  const voicesRef = useRef<VoiceInfo[]>([])
   const [status, setStatus] = useState<Status>('loading-score')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [playbackState, setPlaybackState] = useState<PlaybackState>(PlaybackState.STOPPED)
@@ -166,6 +351,39 @@ export default function ScorePlayer({ url }: Props) {
   const [currentStep, setCurrentStep] = useState(0)
   const [totalSteps, setTotalSteps] = useState(0)
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>(readStoredPlaybackMode)
+
+  // Note-highlight helpers — defined before the load effect because the
+  // ITERATION handler closes over them. They operate purely on refs, so
+  // they don't need to be useCallback'd.
+  const clearActiveHighlights = () => {
+    for (const { el } of activeHighlightsRef.current) {
+      el.classList.remove('score-note-highlighted')
+      el.style.removeProperty('--voice-highlight-color')
+    }
+    activeHighlightsRef.current = []
+  }
+
+  const applyHighlightsForStep = (step: number) => {
+    const targets = noteHighlightsByStepRef.current.get(step)
+    if (!targets) return
+    const liveVoices = voicesRef.current
+    for (const target of targets) {
+      const v = liveVoices[target.voiceIndex]
+      if (!v || v.muted || !v.color) continue
+      // If this voice shares a pitch with another voice that's also active
+      // (and unmuted), blend their colors so a unison reads as "both voices
+      // are here" instead of one stomping on the other.
+      const colors = [v.color]
+      for (const otherIdx of target.sharedWith) {
+        const other = liveVoices[otherIdx]
+        if (other && !other.muted && other.color) colors.push(other.color)
+      }
+      const color = colors.length === 1 ? colors[0] : blendHexColors(colors)
+      target.el.style.setProperty('--voice-highlight-color', color)
+      target.el.classList.add('score-note-highlighted')
+      activeHighlightsRef.current.push(target)
+    }
+  }
 
   useEffect(() => {
     const container = containerRef.current
@@ -195,12 +413,23 @@ export default function ScorePlayer({ url }: Props) {
       drawLyricist: true,
       drawCredits: true,
       cursorsOptions: [
-        // Deep red — high contrast against the white score-render background,
-        // and a nod to the red-letter rubrics in liturgical service books.
-        // `follow: true` auto-scrolls the page to keep the cursor in view
-        // during normal playback. Seek-jumps still trigger an explicit
-        // scrollIntoView in handleSeek for predictable centering.
-        { type: 0, color: '#8b1a1a', alpha: 0.4, follow: true },
+        // Translucent black — a soft shadow over the current note. Neutral
+        // (doesn't compete with the colored voice indicators), reads as a
+        // system control rather than score content.
+        // `follow` auto-scrolls the page to keep the cursor in view during
+        // playback. Disabled on touch-primary devices (phones, tablets)
+        // where the auto-scroll fights the user's manual scroll gestures.
+        // Seek-jumps still trigger an explicit scrollIntoView in handleSeek
+        // for predictable centering on any device.
+        {
+          type: 0,
+          color: '#000000',
+          alpha: 0.18,
+          follow:
+            typeof window === 'undefined'
+              ? true
+              : !window.matchMedia?.('(pointer: coarse)').matches,
+        },
       ],
       // Honor system / page breaks from the MusicXML itself
       // (`<print new-system>` / `<print new-page>` elements).
@@ -232,7 +461,10 @@ export default function ScorePlayer({ url }: Props) {
         engine.on(PlaybackEvent.STATE_CHANGE, (state: PlaybackState) => {
           if (cancelled) return
           setPlaybackState(state)
-          if (state === PlaybackState.STOPPED) setCurrentStep(0)
+          if (state === PlaybackState.STOPPED) {
+            setCurrentStep(0)
+            clearActiveHighlights()
+          }
         })
 
         await engine.loadScore(osmd)
@@ -253,6 +485,12 @@ export default function ScorePlayer({ url }: Props) {
             undoFirstAdvanceRef.current = false
           }
           setCurrentStep(internals.currentIterationStep)
+          // Note auto-advances `currentIterationStep` past the audible note
+          // (it's been incremented inside iterationCallback before this fires),
+          // so the audible step is currentIterationStep - 1.
+          const audibleStep = Math.max(0, internals.currentIterationStep - 1)
+          clearActiveHighlights()
+          applyHighlightsForStep(audibleStep)
         })
 
         // Make the cursor visible immediately (the audio player only calls
@@ -267,7 +505,13 @@ export default function ScorePlayer({ url }: Props) {
         // transforms, scroll offsets, and zoom for us.
         clickableNotesRef.current = buildClickableNotes(osmd)
 
-        setVoices(buildVoiceInfos(engine.scoreInstruments))
+        const builtVoices = buildVoiceInfos(engine.scoreInstruments)
+        // Pre-populate voicesRef so the highlight logic can read live mute
+        // state on the first iteration (voices state hasn't flushed yet).
+        voicesRef.current = builtVoices
+        noteHighlightsByStepRef.current = buildNoteHighlights(osmd, builtVoices)
+
+        setVoices(builtVoices)
         setPlaybackState(engine.state)
         setTotalSteps(internals.iterationSteps)
         setStatus('ready')
@@ -287,9 +531,62 @@ export default function ScorePlayer({ url }: Props) {
       engineRef.current = null
       osmdRef.current = null
       clickableNotesRef.current = []
+      noteHighlightsByStepRef.current = new Map()
+      activeHighlightsRef.current = []
       container.innerHTML = ''
     }
   }, [url])
+
+  // Mirror voices state into a ref so the ITERATION handler reads live mute
+  // state. Also drop highlights on any voice that just became muted so the
+  // mute is reflected immediately (otherwise it'd persist until the next note).
+  useEffect(() => {
+    voicesRef.current = voices
+    for (let i = activeHighlightsRef.current.length - 1; i >= 0; i--) {
+      const h = activeHighlightsRef.current[i]
+      const v = voices[h.voiceIndex]
+      if (!v || v.muted) {
+        h.el.classList.remove('score-note-highlighted')
+        h.el.style.removeProperty('--voice-highlight-color')
+        activeHighlightsRef.current.splice(i, 1)
+      }
+    }
+  }, [voices])
+
+  // Responsive scale: render OSMD at a fixed reference width (.score-inner is
+  // 960px in CSS) and shrink it via CSS transform when the viewport is
+  // narrower. Layout stays identical to desktop; only the visual size shrinks.
+  // The browser's transform-aware getBoundingClientRect keeps click hit-tests
+  // and cursor scrollIntoView correct under scaling.
+  useEffect(() => {
+    if (status !== 'ready') return
+    const outer = outerRef.current
+    const inner = containerRef.current
+    if (!outer || !inner) return
+
+    const REFERENCE_WIDTH = 960
+
+    const update = () => {
+      const outerW = outer.clientWidth
+      const scale = Math.min(1, outerW / REFERENCE_WIDTH)
+      if (scale === 1) {
+        inner.style.transform = ''
+        outer.style.height = ''
+      } else {
+        inner.style.transform = `scale(${scale})`
+        // Layout box of inner is unchanged by the transform, so offsetHeight
+        // gives the unscaled rendered height. The visual height is that × scale,
+        // which is what outer should clip to.
+        outer.style.height = `${inner.offsetHeight * scale}px`
+      }
+    }
+
+    const ro = new ResizeObserver(update)
+    ro.observe(outer)
+    ro.observe(inner)
+
+    return () => ro.disconnect()
+  }, [status])
 
   // Apply the selected playback instrument to every voice, and persist the
   // choice. Runs whenever the score finishes loading (status -> ready) or the
@@ -522,7 +819,7 @@ export default function ScorePlayer({ url }: Props) {
               </button>
             </div>
 
-            <span className="score-dock-sound-label">Sound:</span>
+            <span className="score-dock-sound-label">Instrumento:</span>
             <div
               className="score-dock-segmented"
               role="group"
@@ -570,18 +867,14 @@ export default function ScorePlayer({ url }: Props) {
         </div>
       )}
 
-      <div
-        ref={containerRef}
-        onClick={handleScoreClick}
-        style={{
-          width: '100%',
-          background: '#fff',
-          color: '#000',
-          padding: 16,
-          borderRadius: 6,
-          cursor: status === 'ready' ? 'pointer' : 'default',
-        }}
-      />
+      <div className="score-outer" ref={outerRef}>
+        <div
+          ref={containerRef}
+          onClick={handleScoreClick}
+          className="score-inner"
+          style={{ cursor: status === 'ready' ? 'pointer' : 'default' }}
+        />
+      </div>
     </div>
   )
 }

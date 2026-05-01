@@ -1,0 +1,226 @@
+/* When applied to a VexFlow stavenote group, paint its noteheads / stem
+   in the per-voice color set via the inline `--voice-highlight-color`
+   custom property. Class-selector specificity beats VexFlow's `fill="black"`
+   presentation attribute, so no `!important` is needed. */
+.score-note-highlighted path {
+  fill: var(--voice-highlight-color, currentColor);
+}
+
+/* OSMD renders at a fixed "desktop reference" width so the layout (measures
+   per system, etc.) is identical regardless of viewport. The outer wrapper
+   masks any overflow on narrower screens; a JS-managed transform on
+   .score-inner scales it down to fit. transform-origin is top-left so the
+   scaled content stays anchored where you'd expect. */
+.score-outer {
+  width: 100%;
+  overflow: hidden;
+}
+
+.score-inner {
+  width: 960px;
+  background: #fff;
+  color: #000;
+  padding: 16px;
+  border-radius: 6px;
+  box-sizing: border-box;
+  transform-origin: top left;
+  /* Promote the whole score to its own GPU compositing layer so mobile
+     browsers paint it upfront instead of lazily during scroll. Eliminates
+     the on-scroll paint hiccups that were stealing main-thread time from
+     the audio scheduler. Costs some texture memory (~15 MB for a tall
+     score on retina mobile) — acceptable on modern phones. */
+  will-change: transform;
+}
+
+/* Floating playback dock — dark surface that pops against the light page. */
+
+.score-dock {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 100;
+  max-width: calc(100vw - 32px);
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  background: #2d2d30;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow:
+    0 12px 32px -12px rgba(0, 0, 0, 0.45),
+    0 4px 12px -4px rgba(0, 0, 0, 0.2);
+
+  color: #cdd2db;
+  font-size: 0.9rem;
+}
+
+/* Progress bar — click to seek */
+
+.score-dock-progress {
+  padding: 4px 0;
+}
+
+.score-dock-progress-track {
+  position: relative;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.score-dock-progress-fill {
+  position: absolute;
+  inset: 0;
+  background: #7aa3d3;
+  transition: width 120ms linear;
+}
+
+/* Generic flex row inside the dock */
+
+.score-dock-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Transport buttons (play / pause / stop) */
+
+.score-dock-transport {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.score-dock-btn {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #e3e6ed;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 100ms ease,
+    border-color 100ms ease;
+}
+
+.score-dock-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.score-dock-btn:focus-visible {
+  outline: 2px solid #7aa3d3;
+  outline-offset: 2px;
+}
+
+.score-dock-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Segmented control (sound mode) — Apple/Linear-style pill group */
+
+.score-dock-sound-label {
+  color: rgba(205, 210, 219, 0.6);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.score-dock-segmented {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.score-dock-segmented-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: rgba(205, 210, 219, 0.85);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition:
+    background 100ms ease,
+    color 100ms ease;
+}
+
+.score-dock-segmented-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.score-dock-segmented-btn[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.score-dock-segmented-btn:focus-visible {
+  outline: 2px solid #7aa3d3;
+  outline-offset: 2px;
+}
+
+/* Voice toggles — pill chips, filled when active, outlined when muted */
+
+.score-dock-voices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.score-dock-voice {
+  /* Per-voice fill is set as a CSS custom property on the button (inline
+     style); this default catches any non-SATB chip that doesn't get one. */
+  --voice-color: #7aa3d3;
+
+  appearance: none;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  color: #cdd2db;
+  padding: 3px 12px;
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background 100ms ease,
+    color 100ms ease,
+    border-color 100ms ease;
+}
+
+.score-dock-voice:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.score-dock-voice[aria-pressed='true'] {
+  background: var(--voice-color);
+  border-color: var(--voice-color);
+  color: #fff;
+  font-weight: 500;
+}
+
+.score-dock-voice[aria-pressed='false'] {
+  text-decoration: line-through;
+  text-decoration-color: rgba(205, 210, 219, 0.5);
+  opacity: 0.7;
+}
+
+.score-dock-voice:focus-visible {
+  outline: 2px solid var(--voice-color);
+  outline-offset: 2px;
+}
