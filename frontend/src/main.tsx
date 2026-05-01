@@ -5,7 +5,9 @@ import './index.css'
 import App from './App.tsx'
 import ScoresList from './pages/ScoresList.tsx'
 import ScoreDetail from './pages/ScoreDetail.tsx'
+import AdminHub from './pages/AdminHub.tsx'
 import AdminUpload from './pages/AdminUpload.tsx'
+import AdminEdit from './pages/AdminEdit.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -14,7 +16,9 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<App />}>
           <Route index element={<ScoresList />} />
           <Route path="scores/:id" element={<ScoreDetail />} />
-          <Route path="admin" element={<AdminUpload />} />
+          <Route path="admin" element={<AdminHub />} />
+          <Route path="admin/upload" element={<AdminUpload />} />
+          <Route path="admin/edit/:id" element={<AdminEdit />} />
         </Route>
       </Routes>
     </BrowserRouter>

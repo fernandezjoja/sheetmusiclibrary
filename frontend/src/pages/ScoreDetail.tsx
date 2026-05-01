@@ -61,8 +61,9 @@ export default function ScoreDetail() {
         </p>
       )}
 
-      <p style={{ marginTop: 24 }}>
+      <p style={{ marginTop: 24, display: 'flex', gap: 16 }}>
         <Link to="/">← Back to all scores</Link>
+        <Link to={`/admin/edit/${score.id}`}>Edit (admin)</Link>
       </p>
     </article>
   )
