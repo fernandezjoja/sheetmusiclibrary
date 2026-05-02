@@ -15,7 +15,7 @@
 .env
 .env.local
 .env.*.local
-storage/
+/storage/
 
 # Local docker-compose (only used for local Postgres in dev)
 docker-compose.yml

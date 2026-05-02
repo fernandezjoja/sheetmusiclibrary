@@ -44,4 +44,4 @@ application-local.yml
 application-local.properties
 
 # Local-disk score storage (path TBD in Phase 4)
-storage/
+/storage/
