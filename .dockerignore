@@ -1,0 +1,44 @@
+# Keep the Docker build context small + don't bake secrets / dev junk into
+# the image. Anything matched here is invisible to COPY in the Dockerfile.
+
+# Source control
+.git
+.gitignore
+.gitattributes
+
+# Editors / IDEs
+.idea
+.vscode
+*.iml
+
+# Local secrets / dev-only state
+.env
+.env.local
+.env.*.local
+storage/
+
+# Local docker-compose (only used for local Postgres in dev)
+docker-compose.yml
+
+# Documentation (not needed in the runtime image)
+*.md
+docs/
+
+# Backend build artifacts
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/HELP.md
+
+# Frontend build artifacts and caches
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.eslintcache
+frontend/.DS_Store
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Claude Code workspace
+.claude/
