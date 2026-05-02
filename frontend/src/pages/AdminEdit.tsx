@@ -24,14 +24,13 @@ export default function AdminEdit() {
   const [loadStatus, setLoadStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('')
   const [title, setTitle] = useState('')
   const [composer, setComposer] = useState('')
   const [tagsRaw, setTagsRaw] = useState('')
   const [musicxml, setMusicxml] = useState<File | null>(null)
   const [pdf, setPdf] = useState<File | null>(null)
   const [mscz, setMscz] = useState<File | null>(null)
+  const [published, setPublished] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<Score | null>(null)
@@ -49,6 +48,7 @@ export default function AdminEdit() {
         setTitle(s.title)
         setComposer(s.composer ?? '')
         setTagsRaw(s.tags.join(', '))
+        setPublished(s.published)
         setLoadStatus('loaded')
       })
       .catch((e: unknown) => {
@@ -64,7 +64,6 @@ export default function AdminEdit() {
 
   const canSubmit =
     title.trim().length > 0 &&
-    password.length > 0 &&
     !submitting &&
     loadStatus === 'loaded'
 
@@ -79,14 +78,13 @@ export default function AdminEdit() {
 
     try {
       const score = await api.updateScore(id, {
-        username,
-        password,
         // Always send metadata so any field changes apply. Files are only
         // sent if the user picked one — backend leaves omitted parts alone.
         metadata: {
           title: title.trim(),
           composer: composer.trim() || null,
           tags,
+          published,
         },
         musicxml,
         pdf,
@@ -144,7 +142,8 @@ export default function AdminEdit() {
           }}
         >
           ✓ Updated <strong>{result.title}</strong>{' '}
-          {result.composer ? `by ${result.composer}` : ''} —{' '}
+          {result.composer ? `by ${result.composer}` : ''}{' '}
+          {result.published ? '(published)' : '(test — admins only)'} —{' '}
           <Link to={`/scores/${result.id}`}>open it</Link>.
         </div>
       )}
@@ -171,40 +170,6 @@ export default function AdminEdit() {
       )}
 
       <form onSubmit={handleSubmit} style={{ maxWidth: 560 }}>
-        <fieldset
-          style={{
-            border: '1px solid var(--border)',
-            borderRadius: 4,
-            padding: 12,
-            marginBottom: 16,
-          }}
-        >
-          <legend>Admin credentials</legend>
-          <div style={fieldStyle}>
-            <label htmlFor="username">Username</label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              style={inputStyle}
-            />
-          </div>
-          <div style={fieldStyle}>
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              style={inputStyle}
-              required
-            />
-          </div>
-        </fieldset>
-
         <div style={fieldStyle}>
           <label htmlFor="title">Title *</label>
           <input
@@ -246,6 +211,41 @@ export default function AdminEdit() {
             </small>
           )}
         </div>
+
+        <fieldset
+          style={{
+            border: '1px solid var(--border)',
+            borderRadius: 4,
+            padding: 12,
+            marginTop: 16,
+            marginBottom: 16,
+          }}
+        >
+          <legend>Visibility</legend>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={published}
+              onChange={(e) => setPublished(e.target.checked)}
+            />
+            <span>
+              <strong>Published</strong>
+              <br />
+              <small style={{ color: 'var(--text)' }}>
+                {published
+                  ? 'Visible to anonymous visitors. Uncheck to revert to test.'
+                  : 'Test version — visible only to signed-in users. Check to make it public.'}
+              </small>
+            </span>
+          </label>
+        </fieldset>
 
         <p style={{ color: 'var(--text)', fontSize: '0.9rem', marginTop: 16 }}>
           File uploads below are <em>optional</em>. Leave blank to keep the

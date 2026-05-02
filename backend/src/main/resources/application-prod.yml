@@ -1,0 +1,19 @@
+# Production profile overrides — activated when SPRING_PROFILES_ACTIVE=prod.
+# Most config is env-driven and lives in application.yml; this file is for
+# dev-vs-prod behavior differences.
+
+spring:
+  jpa:
+    show-sql: false
+  # Production should fail fast on Hibernate / JPA misconfig rather than
+  # silently logging warnings.
+  main:
+    log-startup-info: true
+
+# Tighter Tomcat thread pool for the small Render instance — keeps memory
+# footprint bounded under load.
+server:
+  tomcat:
+    threads:
+      max: 50
+      min-spare: 5

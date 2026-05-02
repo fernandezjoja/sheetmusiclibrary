@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api, ApiError, type Score } from '../api'
+import TagReference from '../components/TagReference'
 
 const fieldStyle = {
   display: 'flex',
@@ -19,14 +20,15 @@ const inputStyle = {
 }
 
 export default function AdminUpload() {
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('')
   const [title, setTitle] = useState('')
   const [composer, setComposer] = useState('')
   const [tagsRaw, setTagsRaw] = useState('')
   const [musicxml, setMusicxml] = useState<File | null>(null)
   const [pdf, setPdf] = useState<File | null>(null)
   const [mscz, setMscz] = useState<File | null>(null)
+  // Default to "test" — anonymous users won't see it. The admin flips it to
+  // published once they've reviewed and the recording is final.
+  const [published, setPublished] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<Score | null>(null)
@@ -42,7 +44,6 @@ export default function AdminUpload() {
     title.trim().length > 0 &&
     musicxml !== null &&
     pdf !== null &&
-    password.length > 0 &&
     !submitting
 
   const handleSubmit = async (e: FormEvent) => {
@@ -56,19 +57,19 @@ export default function AdminUpload() {
 
     try {
       const score = await api.createScore({
-        username,
-        password,
         metadata: {
           title: title.trim(),
           composer: composer.trim() || null,
           tags,
+          published,
         },
         musicxml: musicxml!,
         pdf: pdf!,
         mscz,
       })
       setResult(score)
-      // Reset content fields, keep credentials for the next upload.
+      // Reset content fields. Keep `published` at its current setting so the
+      // admin doesn't have to re-tick it for a batch of similar uploads.
       setTitle('')
       setComposer('')
       setTagsRaw('')
@@ -110,7 +111,8 @@ export default function AdminUpload() {
           }}
         >
           ✓ Uploaded <strong>{result.title}</strong>{' '}
-          {result.composer ? `by ${result.composer}` : ''} —{' '}
+          {result.composer ? `by ${result.composer}` : ''}{' '}
+          {result.published ? '(published)' : '(test — admins only)'} —{' '}
           <Link to={`/scores/${result.id}`}>open it</Link>.
         </div>
       )}
@@ -137,40 +139,6 @@ export default function AdminUpload() {
       )}
 
       <form onSubmit={handleSubmit} style={{ maxWidth: 560 }}>
-        <fieldset
-          style={{
-            border: '1px solid var(--border)',
-            borderRadius: 4,
-            padding: 12,
-            marginBottom: 16,
-          }}
-        >
-          <legend>Admin credentials</legend>
-          <div style={fieldStyle}>
-            <label htmlFor="username">Username</label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              style={inputStyle}
-            />
-          </div>
-          <div style={fieldStyle}>
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              style={inputStyle}
-              required
-            />
-          </div>
-        </fieldset>
-
         <div style={fieldStyle}>
           <label htmlFor="title">Title *</label>
           <input
@@ -203,7 +171,7 @@ export default function AdminUpload() {
             type="text"
             value={tagsRaw}
             onChange={(e) => setTagsRaw(e.target.value)}
-            placeholder="sacred, romantic"
+            placeholder="service:liturgy, language:english, voicing:satb"
             style={inputStyle}
           />
           {tags.length > 0 && (
@@ -211,6 +179,18 @@ export default function AdminUpload() {
               Will be saved as: {tags.map((t) => `#${t}`).join(' ')}
             </small>
           )}
+          <TagReference
+            onAdd={(tag) =>
+              setTagsRaw((prev) => {
+                const existing = prev
+                  .split(',')
+                  .map((t) => t.trim().toLowerCase())
+                  .filter(Boolean)
+                if (existing.includes(tag.toLowerCase())) return prev
+                return prev.trim() ? `${prev.replace(/,\s*$/, '')}, ${tag}` : tag
+              })
+            }
+          />
         </div>
 
         <div style={fieldStyle}>
@@ -247,6 +227,41 @@ export default function AdminUpload() {
             onChange={(e) => setMscz(e.target.files?.[0] ?? null)}
           />
         </div>
+
+        <fieldset
+          style={{
+            border: '1px solid var(--border)',
+            borderRadius: 4,
+            padding: 12,
+            marginTop: 16,
+            marginBottom: 16,
+          }}
+        >
+          <legend>Visibility</legend>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={published}
+              onChange={(e) => setPublished(e.target.checked)}
+            />
+            <span>
+              <strong>Publish immediately</strong>
+              <br />
+              <small style={{ color: 'var(--text)' }}>
+                When unchecked, the score is saved as a <em>test</em> version,
+                visible only to signed-in users. You can flip it to published
+                later from the edit page.
+              </small>
+            </span>
+          </label>
+        </fieldset>
 
         <button type="submit" disabled={!canSubmit} style={{ marginTop: 8 }}>
           {submitting ? 'Uploading…' : 'Upload'}

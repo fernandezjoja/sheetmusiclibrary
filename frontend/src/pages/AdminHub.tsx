@@ -49,6 +49,22 @@ export default function AdminHub() {
               >
                 <span>
                   {s.title}
+                  {!s.published && (
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        fontSize: '0.7em',
+                        fontWeight: 600,
+                        padding: '1px 6px',
+                        borderRadius: 3,
+                        background: '#f5e6c8',
+                        color: '#8a5a00',
+                        verticalAlign: 'middle',
+                      }}
+                    >
+                      TEST
+                    </span>
+                  )}
                   {s.composer && (
                     <span style={{ marginLeft: 6 }}>— {s.composer}</span>
                   )}

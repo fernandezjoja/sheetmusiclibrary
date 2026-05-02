@@ -32,7 +32,26 @@ export default function ScoreDetail() {
 
   return (
     <article>
-      <h2 style={{ marginBottom: 4 }}>{score.title}</h2>
+      <h2 style={{ marginBottom: 4 }}>
+        {score.title}
+        {!score.published && (
+          <span
+            style={{
+              marginLeft: 10,
+              fontSize: '0.7em',
+              fontWeight: 600,
+              padding: '2px 8px',
+              borderRadius: 4,
+              background: '#f5e6c8',
+              color: '#8a5a00',
+              verticalAlign: 'middle',
+            }}
+            title="Test version — visible only to signed-in users"
+          >
+            TEST
+          </span>
+        )}
+      </h2>
       {score.composer && <p style={{ marginTop: 0, color: 'var(--text)' }}>{score.composer}</p>}
       {score.tags.length > 0 && (
         <p style={{ fontSize: '0.9rem', color: 'var(--text)' }}>

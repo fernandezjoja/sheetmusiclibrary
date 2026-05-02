@@ -45,6 +45,23 @@ export default function ScoresList() {
             >
               <Link to={`/scores/${s.id}`} style={{ fontWeight: 500 }}>
                 {s.title}
+                {!s.published && (
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      fontSize: '0.7em',
+                      fontWeight: 600,
+                      padding: '1px 6px',
+                      borderRadius: 3,
+                      background: '#f5e6c8',
+                      color: '#8a5a00',
+                      verticalAlign: 'middle',
+                    }}
+                    title="Test version — visible only to signed-in users"
+                  >
+                    TEST
+                  </span>
+                )}
               </Link>
               {attribution.length > 0 && (
                 <span

@@ -44,4 +44,12 @@ public class Score {
 
     @Column(name = "mscz_path")
     private String msczPath;
+
+    /**
+     * False = test/draft (visible only to logged-in users).
+     * True  = official (visible to anonymous visitors).
+     * Defaults to false on insert via the V3 migration's column default.
+     */
+    @Column(nullable = false)
+    private boolean published = false;
 }

@@ -2,17 +2,22 @@ spring:
   application:
     name: backend
 
-  # Pulls POSTGRES_*, ADMIN_*, STORAGE_ROOT from the repo-root .env when running from backend/.
-  # `optional:` means startup still works if .env is missing (e.g. CI), as long
-  # as the equivalent env vars are set. The [.properties] hint tells Spring to
-  # parse .env using Java properties syntax (KEY=value).
+  # Pulls POSTGRES_*, ADMIN_*, STORAGE_*, R2_* values from the repo-root .env
+  # when running from backend/. `optional:` means startup still works if .env
+  # is missing (e.g. CI / production), as long as the equivalent env vars are
+  # set. The [.properties] hint tells Spring to parse .env using Java
+  # properties syntax (KEY=value).
   config:
     import: optional:file:../.env[.properties]
 
+  # Datasource defaults to a local Postgres for dev. In production, set
+  # SPRING_DATASOURCE_URL / SPRING_DATASOURCE_USERNAME / SPRING_DATASOURCE_PASSWORD
+  # env vars (Spring's standard names) — they take precedence over the
+  # placeholder defaults below.
   datasource:
-    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:sheetmusic}
+    username: ${POSTGRES_USER:sheetmusic}
+    password: ${POSTGRES_PASSWORD:}
 
   jpa:
     hibernate:
@@ -28,9 +33,26 @@ spring:
       max-file-size: 50MB
       max-request-size: 200MB
 
+server:
+  # Honors Render's $PORT env var; falls back to 8080 for local dev.
+  port: ${PORT:8080}
+
 app:
   storage:
+    # 'local' => LocalDiskFileStorageService writes to STORAGE_ROOT on the
+    # local filesystem (default for dev).
+    # 's3' => S3FileStorageService stores in any S3-compatible bucket
+    # (Cloudflare R2 in our prod setup) using the R2_* env vars below.
+    backend: ${STORAGE_BACKEND:local}
     root: ${STORAGE_ROOT:./storage}
+    s3:
+      bucket: ${R2_BUCKET:}
+      endpoint: ${R2_ENDPOINT_URL:}
+      access-key: ${R2_ACCESS_KEY_ID:}
+      secret-key: ${R2_SECRET_ACCESS_KEY:}
+      # R2 uses the literal string 'auto' as its region; AWS S3 would use
+      # 'us-east-1' etc.
+      region: ${R2_REGION:auto}
   admin:
     username: ${ADMIN_USERNAME:admin}
     password: ${ADMIN_PASSWORD}

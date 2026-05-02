@@ -22,14 +22,26 @@ public class ScoreService {
         this.storage = storage;
     }
 
+    /**
+     * @param includeUnpublished true for logged-in users (USER or ADMIN);
+     *                           false for anonymous, who only see published.
+     */
     @Transactional(readOnly = true)
-    public List<Score> list() {
-        return repo.findAll();
+    public List<Score> list(boolean includeUnpublished) {
+        return includeUnpublished ? repo.findAll() : repo.findByPublishedTrue();
     }
 
+    /**
+     * Anonymous viewers get a 404 (via ScoreNotFoundException) for unpublished
+     * scores — same response as a non-existent id, so existence isn't leaked.
+     */
     @Transactional(readOnly = true)
-    public Score get(Long id) {
-        return repo.findById(id).orElseThrow(() -> new ScoreNotFoundException(id));
+    public Score get(Long id, boolean includeUnpublished) {
+        Score score = repo.findById(id).orElseThrow(() -> new ScoreNotFoundException(id));
+        if (!includeUnpublished && !score.isPublished()) {
+            throw new ScoreNotFoundException(id);
+        }
+        return score;
     }
 
     @Transactional
@@ -40,6 +52,8 @@ public class ScoreService {
         score.setTitle(meta.title().trim());
         score.setComposer(meta.composer() == null ? null : meta.composer().trim());
         score.setTags(normalizeTags(meta.tags()));
+        // Default false; admin can opt-in by passing true at creation time.
+        score.setPublished(Boolean.TRUE.equals(meta.published()));
         score.setMusicxmlPath(storage.store(musicxml, FileType.MUSICXML));
         score.setPdfPath(storage.store(pdf, FileType.PDF));
         if (mscz != null && !mscz.isEmpty()) {
@@ -62,6 +76,11 @@ public class ScoreService {
             score.setTitle(meta.title().trim());
             score.setComposer(meta.composer() == null ? null : meta.composer().trim());
             score.setTags(normalizeTags(meta.tags()));
+            // Only flip published if the request explicitly carries it (a value
+            // of `null` means "leave it alone" — same convention as files).
+            if (meta.published() != null) {
+                score.setPublished(meta.published());
+            }
         }
         if (musicxml != null && !musicxml.isEmpty()) {
             pathsToDelete.add(score.getMusicxmlPath());
