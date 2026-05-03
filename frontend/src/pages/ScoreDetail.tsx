@@ -53,11 +53,6 @@ export default function ScoreDetail() {
         )}
       </h2>
       {score.composer && <p style={{ marginTop: 0, color: 'var(--text)' }}>{score.composer}</p>}
-      {score.tags.length > 0 && (
-        <p style={{ fontSize: '0.9rem', color: 'var(--text)' }}>
-          {score.tags.map((t) => `#${t}`).join(' ')}
-        </p>
-      )}
 
       <div style={{ display: 'flex', gap: 12, margin: '16px 0' }}>
         {score.pdfPath && (

@@ -887,31 +887,26 @@ export default function ScorePlayer({ url }: Props) {
                 type="button"
                 className="score-dock-btn"
                 onClick={handleFastBackward}
-                disabled={totalSteps === 0 || currentStep === 0}
+                disabled={
+                  totalSteps === 0 ||
+                  currentStep === 0 ||
+                  playbackState === PlaybackState.STOPPED
+                }
                 aria-label="Previous measure"
                 title="Previous measure"
               >
-                ⏪
+                ⏮
               </button>
               <button
                 type="button"
                 className="score-dock-btn"
-                onClick={handlePlay}
-                disabled={playbackState === PlaybackState.PLAYING}
-                aria-label="Play"
-                title="Play (space)"
+                onClick={playbackState === PlaybackState.PLAYING ? handlePause : handlePlay}
+                aria-label={playbackState === PlaybackState.PLAYING ? 'Pause' : 'Play'}
+                title={
+                  playbackState === PlaybackState.PLAYING ? 'Pause (space)' : 'Play (space)'
+                }
               >
-                ▶
-              </button>
-              <button
-                type="button"
-                className="score-dock-btn"
-                onClick={handlePause}
-                disabled={playbackState !== PlaybackState.PLAYING}
-                aria-label="Pause"
-                title="Pause (space)"
-              >
-                ⏸
+                {playbackState === PlaybackState.PLAYING ? '⏸' : '▶'}
               </button>
               <button
                 type="button"
@@ -929,12 +924,13 @@ export default function ScorePlayer({ url }: Props) {
                 onClick={handleFastForward}
                 disabled={
                   totalSteps === 0 ||
+                  playbackState === PlaybackState.STOPPED ||
                   measureIndexAt(currentStep) >= measureStartsRef.current.length - 1
                 }
                 aria-label="Next measure"
                 title="Next measure"
               >
-                ⏩
+                ⏭
               </button>
             </div>
 
