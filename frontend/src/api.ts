@@ -114,6 +114,15 @@ async function createScore(params: CreateScoreParams): Promise<Score> {
   throw new ApiError(`${res.status} ${res.statusText}`, res.status)
 }
 
+async function deleteScore(id: string | number): Promise<void> {
+  const res = await apiFetch(`/api/admin/scores/${id}`, { method: 'DELETE' })
+  if (res.status === 204) return
+  if (res.status === 401) throw new ApiError('Not signed in', 401)
+  if (res.status === 403) throw new ApiError('Admin privileges required', 403)
+  if (res.status === 404) throw new ApiError('Score not found', 404)
+  throw new ApiError(`${res.status} ${res.statusText}`, res.status)
+}
+
 async function updateScore(id: string | number, params: UpdateScoreParams): Promise<Score> {
   const fd = new FormData()
   if (params.metadata) {
@@ -152,4 +161,5 @@ export const api = {
   me,
   createScore,
   updateScore,
+  deleteScore,
 }

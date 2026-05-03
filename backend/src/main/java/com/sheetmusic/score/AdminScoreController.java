@@ -1,7 +1,10 @@
 package com.sheetmusic.score;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,9 +32,10 @@ public class AdminScoreController {
             @RequestPart("metadata") @Valid CreateScoreRequest metadata,
             @RequestPart("musicxml") MultipartFile musicxml,
             @RequestPart("pdf") MultipartFile pdf,
-            @RequestPart(value = "mscz", required = false) MultipartFile mscz
+            @RequestPart(value = "mscz", required = false) MultipartFile mscz,
+            @RequestPart(value = "recording", required = false) List<MultipartFile> recordings
     ) {
-        return scores.create(metadata, musicxml, pdf, mscz);
+        return scores.create(metadata, musicxml, pdf, mscz, recordings);
     }
 
     /**
@@ -47,5 +51,11 @@ public class AdminScoreController {
             @RequestPart(value = "mscz", required = false) MultipartFile mscz
     ) {
         return scores.update(id, metadata, musicxml, pdf, mscz);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        scores.delete(id);
     }
 }

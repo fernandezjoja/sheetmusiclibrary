@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError, type Score } from '../api'
 
 const fieldStyle = {
@@ -20,6 +20,7 @@ const inputStyle = {
 
 export default function AdminEdit() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
 
   const [loadStatus, setLoadStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -33,6 +34,7 @@ export default function AdminEdit() {
   const [published, setPublished] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [result, setResult] = useState<Score | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<string[]>([])
@@ -111,6 +113,24 @@ export default function AdminEdit() {
       }
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!id) return
+    const ok = window.confirm(
+      `Delete "${title}"?\n\nThis removes the score, all its files, and any attached recordings, references, and notes. Cannot be undone.`,
+    )
+    if (!ok) return
+    setDeleting(true)
+    setError(null)
+    setFieldErrors([])
+    try {
+      await api.deleteScore(id)
+      navigate('/biblioteca', { replace: true })
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
+      setDeleting(false)
     }
   }
 
@@ -286,6 +306,37 @@ export default function AdminEdit() {
           {submitting ? 'Saving…' : 'Save changes'}
         </button>
       </form>
+
+      <fieldset
+        style={{
+          border: '1px solid #c44',
+          borderRadius: 4,
+          padding: 12,
+          marginTop: 32,
+          maxWidth: 560,
+        }}
+      >
+        <legend style={{ color: '#c44' }}>Danger zone</legend>
+        <p style={{ margin: '0 0 12px', color: 'var(--text)', fontSize: '0.9rem' }}>
+          Deleting removes the score, its files (MusicXML, PDF, .mscz), and all
+          attached recordings, references, and notes. Cannot be undone.
+        </p>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting || submitting || loadStatus !== 'loaded'}
+          style={{
+            background: '#c44',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 4,
+            padding: '6px 12px',
+            cursor: deleting ? 'wait' : 'pointer',
+          }}
+        >
+          {deleting ? 'Deleting…' : 'Delete this score'}
+        </button>
+      </fieldset>
 
       <p style={{ marginTop: 24 }}>
         <Link to={`/scores/${id}`}>← Back to score</Link>

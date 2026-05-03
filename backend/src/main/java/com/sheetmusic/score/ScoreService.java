@@ -28,7 +28,9 @@ public class ScoreService {
      */
     @Transactional(readOnly = true)
     public List<Score> list(boolean includeUnpublished) {
-        return includeUnpublished ? repo.findAll() : repo.findByPublishedTrue();
+        List<Score> scores = includeUnpublished ? repo.findAll() : repo.findByPublishedTrue();
+        scores.forEach(ScoreService::initializeAttachments);
+        return scores;
     }
 
     /**
@@ -41,13 +43,34 @@ public class ScoreService {
         if (!includeUnpublished && !score.isPublished()) {
             throw new ScoreNotFoundException(id);
         }
+        initializeAttachments(score);
         return score;
     }
 
+    /**
+     * Creates a score plus optional 0+ recordings and 0+ references (each with 0+ notes)
+     * in a single transaction. {@code recordingFiles} must align 1:1 with
+     * {@code meta.recordings()}; mismatched sizes throw 400.
+     *
+     * <p>Files are written first; if the DB save throws, files orphan in storage.
+     * A periodic sweep can reconcile orphans if it ever becomes a problem.
+     * Cascade=ALL on Score's @OneToMany collections persists the entire nested
+     * graph through one repo.save(score).
+     */
     @Transactional
-    public Score create(CreateScoreRequest meta, MultipartFile musicxml, MultipartFile pdf, MultipartFile mscz) {
-        // Files are written first; if the DB save throws, files orphan on disk.
-        // A periodic sweep can reconcile orphans if it ever becomes a problem.
+    public Score create(CreateScoreRequest meta,
+                        MultipartFile musicxml,
+                        MultipartFile pdf,
+                        MultipartFile mscz,
+                        List<MultipartFile> recordingFiles) {
+        int expectedRecordings = meta.recordings() == null ? 0 : meta.recordings().size();
+        int actualRecordings = recordingFiles == null ? 0 : recordingFiles.size();
+        if (expectedRecordings != actualRecordings) {
+            throw new IllegalArgumentException(
+                    "metadata.recordings count (" + expectedRecordings
+                            + ") must match recording multipart parts (" + actualRecordings + ")");
+        }
+
         Score score = new Score();
         score.setTitle(meta.title().trim());
         score.setComposer(meta.composer() == null ? null : meta.composer().trim());
@@ -59,7 +82,55 @@ public class ScoreService {
         if (mscz != null && !mscz.isEmpty()) {
             score.setMsczPath(storage.store(mscz, FileType.MSCZ));
         }
+
+        for (int i = 0; i < expectedRecordings; i++) {
+            score.getRecordings().add(buildRecording(score, meta.recordings().get(i), recordingFiles.get(i)));
+        }
+        if (meta.references() != null) {
+            for (ReferenceUploadRequest refReq : meta.references()) {
+                score.getReferences().add(buildReference(score, refReq));
+            }
+        }
+
         return repo.save(score);
+    }
+
+    private ScoreRecording buildRecording(Score score, RecordingUploadRequest req, MultipartFile file) {
+        ScoreRecording rec = new ScoreRecording();
+        rec.setScore(score);
+        rec.setPath(storage.store(file, FileType.RECORDING));
+        rec.setOriginalFilename(file.getOriginalFilename());
+        if (req.label() != null && !req.label().isBlank()) rec.setLabel(req.label().trim());
+        if (req.sortOrder() != null) rec.setSortOrder(req.sortOrder());
+        if (req.notes() != null) {
+            for (NoteUploadRequest noteReq : req.notes()) {
+                ScoreRecordingNote note = new ScoreRecordingNote();
+                note.setRecording(rec);
+                note.setBody(noteReq.body().trim());
+                if (noteReq.sortOrder() != null) note.setSortOrder(noteReq.sortOrder());
+                rec.getNotes().add(note);
+            }
+        }
+        return rec;
+    }
+
+    private static ScoreReference buildReference(Score score, ReferenceUploadRequest req) {
+        ScoreReference ref = new ScoreReference();
+        ref.setScore(score);
+        ref.setUrl(req.url().trim());
+        if (req.label() != null && !req.label().isBlank()) ref.setLabel(req.label().trim());
+        if (req.kind() != null && !req.kind().isBlank()) ref.setKind(req.kind().trim());
+        if (req.sortOrder() != null) ref.setSortOrder(req.sortOrder());
+        if (req.notes() != null) {
+            for (NoteUploadRequest noteReq : req.notes()) {
+                ScoreReferenceNote note = new ScoreReferenceNote();
+                note.setReference(ref);
+                note.setBody(noteReq.body().trim());
+                if (noteReq.sortOrder() != null) note.setSortOrder(noteReq.sortOrder());
+                ref.getNotes().add(note);
+            }
+        }
+        return ref;
     }
 
     /**
@@ -98,7 +169,46 @@ public class ScoreService {
         Score saved = repo.save(score);
         // Old files removed only on success. delete() swallows missing-file errors.
         pathsToDelete.forEach(storage::delete);
+        initializeAttachments(saved);
         return saved;
+    }
+
+    /**
+     * Hard delete: removes the score row (cascades attachments + their notes via DB
+     * ON DELETE CASCADE) and best-effort removes all associated blobs (musicxml,
+     * pdf, mscz, every recording's mp3) from storage.
+     */
+    @Transactional
+    public void delete(Long id) {
+        Score score = repo.findById(id).orElseThrow(() -> new ScoreNotFoundException(id));
+        List<String> pathsToDelete = new ArrayList<>();
+        pathsToDelete.add(score.getMusicxmlPath());
+        pathsToDelete.add(score.getPdfPath());
+        pathsToDelete.add(score.getMsczPath());
+        for (ScoreRecording rec : score.getRecordings()) {
+            pathsToDelete.add(rec.getPath());
+        }
+        repo.delete(score);
+        // Files removed after the DB delete commits; storage.delete swallows nulls + missing files.
+        pathsToDelete.forEach(storage::delete);
+    }
+
+    /**
+     * Force-load lazy attachment collections (recordings + references and their notes)
+     * so Jackson can serialize them after the @Transactional method returns. We run with
+     * spring.jpa.open-in-view: false, so serialization happens outside the Hibernate
+     * session — uninitialized proxies would throw LazyInitializationException.
+     *
+     * For a parish-scale library this triggers N+1 queries per list call; revisit with
+     * @BatchSize / @EntityGraph if the access log shows it becoming a problem.
+     */
+    private static void initializeAttachments(Score score) {
+        for (ScoreRecording r : score.getRecordings()) {
+            r.getNotes().size();
+        }
+        for (ScoreReference r : score.getReferences()) {
+            r.getNotes().size();
+        }
     }
 
     private static List<String> normalizeTags(List<String> raw) {

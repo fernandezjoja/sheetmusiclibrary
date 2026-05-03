@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   OpenSheetMusicDisplay,
   type Instrument,
@@ -59,6 +59,32 @@ type EngineInternals = {
  *     and VexFlow stores the SVG group on `attrs.el` after rendering. These
  *     are runtime-only fields so we cast through a small interface.
  */
+/**
+ * For each measure in the score, the iterator step at which it begins.
+ * `measureStarts[m]` is the step where measure `m` begins; the array is in
+ * ascending step order so a binary search resolves any step → measure index.
+ *
+ * Built by walking the same iterator used in {@link buildClickableNotes} and
+ * recording the step every time {@code CurrentMeasureIndex} changes. Empty
+ * measures (no notes) still bump the index so they appear here.
+ */
+function buildMeasureStarts(osmd: OpenSheetMusicDisplay): number[] {
+  const iter = osmd.Sheet.MusicPartManager.getIterator()
+  const starts: number[] = []
+  let step = 0
+  let lastMeasure = -1
+  while (!iter.EndReached) {
+    const measureIdx = iter.CurrentMeasureIndex
+    if (measureIdx !== lastMeasure) {
+      starts.push(step)
+      lastMeasure = measureIdx
+    }
+    iter.moveToNext()
+    step++
+  }
+  return starts
+}
+
 function buildClickableNotes(osmd: OpenSheetMusicDisplay): ClickableNote[] {
   const veToStep = new Map<VoiceEntry, number>()
   const iter = osmd.Sheet.MusicPartManager.getIterator()
@@ -332,6 +358,7 @@ export default function ScorePlayer({ url }: Props) {
   const engineRef = useRef<PlaybackEngine | null>(null)
   const osmdRef = useRef<OpenSheetMusicDisplay | null>(null)
   const clickableNotesRef = useRef<ClickableNote[]>([])
+  const measureStartsRef = useRef<number[]>([])
   // Set to true after a seek to step > 0 so the next ITERATION event can
   // undo the audio player's automatic cursor advance (which would put cursor
   // on the note *after* the one we landed on).
@@ -351,6 +378,26 @@ export default function ScorePlayer({ url }: Props) {
   const [currentStep, setCurrentStep] = useState(0)
   const [totalSteps, setTotalSteps] = useState(0)
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>(readStoredPlaybackMode)
+
+  // Touch-primary devices (phones, tablets) get buggy click-to-jump because
+  // taps land between notes more easily on small screens; users have the
+  // progress bar for navigation. Detected once at mount — viewport rotation
+  // doesn't change pointer type.
+  const isTouchDevice = useMemo(
+    () => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches,
+    [],
+  )
+
+  // Click-to-jump is enabled only after the user has started playback at
+  // least once (any non-STOPPED state). Clicking Stop disables it again
+  // until the next Play. Off entirely on touch.
+  const clickToJumpEnabled =
+    status === 'ready' && !isTouchDevice && playbackState !== PlaybackState.STOPPED
+
+  // Progress-bar seek follows the same "must have started playback" rule
+  // (so a fresh score doesn't tease a clickable timeline that does nothing
+  // useful), but stays available on touch — phones rely on it.
+  const progressBarEnabled = status === 'ready' && playbackState !== PlaybackState.STOPPED
 
   // Note-highlight helpers — defined before the load effect because the
   // ITERATION handler closes over them. They operate purely on refs, so
@@ -438,6 +485,9 @@ export default function ScorePlayer({ url }: Props) {
       // before exporting.
       newSystemFromXML: true,
       newPageFromXML: true,
+      // Compute layout against Letter-paper proportions so measures-per-line
+      // matches the MuseScore PDF more closely. Use 'A4_P' if authoring in A4.
+      pageFormat: 'Letter_P',
     })
     // Add some breathing room around header text (default is 1 OSMD unit each,
     // which causes title / subtitle / composer to crowd together).
@@ -504,6 +554,7 @@ export default function ScorePlayer({ url }: Props) {
         // coordinate math. Browser's getBoundingClientRect handles all SVG
         // transforms, scroll offsets, and zoom for us.
         clickableNotesRef.current = buildClickableNotes(osmd)
+        measureStartsRef.current = buildMeasureStarts(osmd)
 
         const builtVoices = buildVoiceInfos(engine.scoreInstruments)
         // Pre-populate voicesRef so the highlight logic can read live mute
@@ -531,6 +582,7 @@ export default function ScorePlayer({ url }: Props) {
       engineRef.current = null
       osmdRef.current = null
       clickableNotesRef.current = []
+      measureStartsRef.current = []
       noteHighlightsByStepRef.current = new Map()
       activeHighlightsRef.current = []
       container.innerHTML = ''
@@ -711,13 +763,57 @@ export default function ScorePlayer({ url }: Props) {
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     if (totalSteps === 0) return
+    if (!progressBarEnabled) return
     const rect = e.currentTarget.getBoundingClientRect()
     const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
     seekToStep(Math.floor(fraction * totalSteps), 'center')
   }
 
+  /**
+   * Largest measure index whose start is at or before {@code step}, via binary
+   * search on the (ascending) {@code measureStarts} array. Returns 0 if the
+   * array is empty (no score loaded).
+   */
+  const measureIndexAt = (step: number): number => {
+    const starts = measureStartsRef.current
+    let lo = 0
+    let hi = starts.length - 1
+    let result = 0
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1
+      if (starts[mid] <= step) {
+        result = mid
+        lo = mid + 1
+      } else {
+        hi = mid - 1
+      }
+    }
+    return result
+  }
+
+  /**
+   * Conventional audio-player rewind: if mid-measure, snap to its start;
+   * if already exactly at the start of a measure, jump to the previous one.
+   * No-op at step 0 (no measure to fall back to).
+   */
+  const handleFastBackward = () => {
+    const starts = measureStartsRef.current
+    if (starts.length === 0 || currentStep === 0) return
+    const idx = measureIndexAt(currentStep)
+    const target = currentStep === starts[idx] && idx > 0 ? starts[idx - 1] : starts[idx]
+    seekToStep(target, 'center')
+  }
+
+  const handleFastForward = () => {
+    const starts = measureStartsRef.current
+    if (starts.length === 0) return
+    const next = starts[measureIndexAt(currentStep) + 1]
+    if (next !== undefined) seekToStep(next, 'center')
+  }
+
   const handleScoreClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (totalSteps === 0) return
+    if (!clickToJumpEnabled) return
     // DOM-native hit test: walk the precomputed (notehead element, step)
     // pairs and find the first element whose bounding rect contains the
     // click pixel. Browser handles SVG transforms, scroll, and zoom; no
@@ -770,7 +866,7 @@ export default function ScorePlayer({ url }: Props) {
             aria-valuemax={Math.max(0, totalSteps - 1)}
             aria-valuenow={currentStep}
             onClick={handleSeek}
-            style={{ cursor: totalSteps > 0 ? 'pointer' : 'default' }}
+            style={{ cursor: progressBarEnabled ? 'pointer' : 'default' }}
           >
             <div className="score-dock-progress-track">
               <div
@@ -787,6 +883,16 @@ export default function ScorePlayer({ url }: Props) {
 
           <div className="score-dock-row">
             <div className="score-dock-transport">
+              <button
+                type="button"
+                className="score-dock-btn"
+                onClick={handleFastBackward}
+                disabled={totalSteps === 0 || currentStep === 0}
+                aria-label="Previous measure"
+                title="Previous measure"
+              >
+                ⏪
+              </button>
               <button
                 type="button"
                 className="score-dock-btn"
@@ -816,6 +922,19 @@ export default function ScorePlayer({ url }: Props) {
                 title="Stop"
               >
                 ⏹
+              </button>
+              <button
+                type="button"
+                className="score-dock-btn"
+                onClick={handleFastForward}
+                disabled={
+                  totalSteps === 0 ||
+                  measureIndexAt(currentStep) >= measureStartsRef.current.length - 1
+                }
+                aria-label="Next measure"
+                title="Next measure"
+              >
+                ⏩
               </button>
             </div>
 
@@ -872,7 +991,7 @@ export default function ScorePlayer({ url }: Props) {
           ref={containerRef}
           onClick={handleScoreClick}
           className="score-inner"
-          style={{ cursor: status === 'ready' ? 'pointer' : 'default' }}
+          style={{ cursor: clickToJumpEnabled ? 'pointer' : 'default' }}
         />
       </div>
     </div>
