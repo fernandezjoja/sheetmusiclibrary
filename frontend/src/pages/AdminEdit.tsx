@@ -1,6 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError, type Score } from '../api'
+import AdminRecordingsSection from '../components/AdminRecordingsSection'
+import AdminReferencesSection from '../components/AdminReferencesSection'
 
 const fieldStyle = {
   display: 'flex',
@@ -24,6 +26,10 @@ export default function AdminEdit() {
 
   const [loadStatus, setLoadStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
+  // Full loaded score, kept fresh after each attachment mutation so the
+  // sections re-render. Updated separately from the form-input state because
+  // the form fields preserve user-in-progress edits independent of refetches.
+  const [score, setScore] = useState<Score | null>(null)
 
   const [title, setTitle] = useState('')
   const [composer, setComposer] = useState('')
@@ -39,7 +45,11 @@ export default function AdminEdit() {
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<string[]>([])
 
-  // Pre-fill the form with the score's current metadata.
+  // Pre-fill the form with the score's current metadata. Runs on mount and
+  // whenever an attachment mutation triggers a refetch (refetchKey).
+  const [refetchKey, setRefetchKey] = useState(0)
+  const refetch = useCallback(() => setRefetchKey((k) => k + 1), [])
+
   useEffect(() => {
     if (!id) return
     setLoadStatus('loading')
@@ -47,17 +57,24 @@ export default function AdminEdit() {
     api
       .getScore(id)
       .then((s) => {
-        setTitle(s.title)
-        setComposer(s.composer ?? '')
-        setTagsRaw(s.tags.join(', '))
-        setPublished(s.published)
+        setScore(s)
+        // Only seed the form on the *initial* load; subsequent refetches
+        // (after attachment changes) shouldn't blow away user-in-progress edits.
+        if (refetchKey === 0) {
+          setTitle(s.title)
+          setComposer(s.composer ?? '')
+          setTagsRaw(s.tags.join(', '))
+          setPublished(s.published)
+        }
         setLoadStatus('loaded')
       })
       .catch((e: unknown) => {
         setLoadError(e instanceof Error ? e.message : String(e))
         setLoadStatus('error')
       })
-  }, [id])
+    // refetchKey is intentionally a dep — bumping it re-runs this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, refetchKey])
 
   const tags = tagsRaw
     .split(',')
@@ -306,6 +323,13 @@ export default function AdminEdit() {
           {submitting ? 'Saving…' : 'Save changes'}
         </button>
       </form>
+
+      {score && (
+        <>
+          <AdminRecordingsSection score={score} onChange={refetch} />
+          <AdminReferencesSection score={score} onChange={refetch} />
+        </>
+      )}
 
       <fieldset
         style={{

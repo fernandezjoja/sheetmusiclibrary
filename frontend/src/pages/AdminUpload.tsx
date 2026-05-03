@@ -1,6 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { api, ApiError, type Score } from '../api'
+import {
+  api,
+  ApiError,
+  type CreateRecordingDraft,
+  type CreateReferenceDraft,
+  type Score,
+} from '../api'
+import AdminPendingRecordings from '../components/AdminPendingRecordings'
+import AdminPendingReferences from '../components/AdminPendingReferences'
 import TagReference from '../components/TagReference'
 
 const fieldStyle = {
@@ -29,6 +37,11 @@ export default function AdminUpload() {
   // Default to "test" — anonymous users won't see it. The admin flips it to
   // published once they've reviewed and the recording is final.
   const [published, setPublished] = useState(false)
+
+  // Optional initial attachments — built up locally and submitted atomically
+  // with the score on Upload. If the create call fails, nothing is persisted.
+  const [pendingRecordings, setPendingRecordings] = useState<CreateRecordingDraft[]>([])
+  const [pendingReferences, setPendingReferences] = useState<CreateReferenceDraft[]>([])
 
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<Score | null>(null)
@@ -66,6 +79,8 @@ export default function AdminUpload() {
         musicxml: musicxml!,
         pdf: pdf!,
         mscz,
+        recordings: pendingRecordings.length ? pendingRecordings : undefined,
+        references: pendingReferences.length ? pendingReferences : undefined,
       })
       setResult(score)
       // Reset content fields. Keep `published` at its current setting so the
@@ -76,6 +91,8 @@ export default function AdminUpload() {
       setMusicxml(null)
       setPdf(null)
       setMscz(null)
+      setPendingRecordings([])
+      setPendingReferences([])
       // Reset file <input>s — they don't clear from setMscz(null) alone.
       const fileInputs = document.querySelectorAll<HTMLInputElement>(
         'input[type="file"]',
@@ -227,6 +244,24 @@ export default function AdminUpload() {
             onChange={(e) => setMscz(e.target.files?.[0] ?? null)}
           />
         </div>
+
+        <AdminPendingRecordings
+          pending={pendingRecordings}
+          onAdd={(d) => setPendingRecordings((prev) => [...prev, d])}
+          onRemove={(idx) =>
+            setPendingRecordings((prev) => prev.filter((_, i) => i !== idx))
+          }
+          disabled={submitting}
+        />
+
+        <AdminPendingReferences
+          pending={pendingReferences}
+          onAdd={(d) => setPendingReferences((prev) => [...prev, d])}
+          onRemove={(idx) =>
+            setPendingReferences((prev) => prev.filter((_, i) => i !== idx))
+          }
+          disabled={submitting}
+        />
 
         <fieldset
           style={{
