@@ -34,6 +34,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Auth flow + identity probe — anyone can hit these
                         .requestMatchers("/api/login", "/api/logout", "/api/me").permitAll()
+                        // .mscz download is a collaborator-tier perk. Must be
+                        // declared *before* the catch-all /api/scores/**
+                        // permitAll below, since first-match wins.
+                        .requestMatchers("/api/scores/*/mscz").hasAnyRole("COLLABORATOR", "ADMIN")
                         // Public reads (filtered server-side: anonymous see
                         // published-only, authenticated users see all)
                         .requestMatchers("/api/scores", "/api/scores/**").permitAll()

@@ -31,7 +31,12 @@ export type Score = {
   tags: string[]
   musicxmlPath: string | null
   pdfPath: string | null
-  msczPath: string | null
+  /**
+   * True only when the score has a .mscz file *and* the requester has
+   * permission to download it (COLLABORATOR or higher). Server-set; the
+   * frontend just renders the download UI when this is true.
+   */
+  hasMscz: boolean
   published: boolean
   recordings: ScoreRecording[]
   references: ScoreReference[]
@@ -391,6 +396,7 @@ export const api = {
   getScore: (id: string | number) => getJson<Score>(`/api/scores/${id}`),
   pdfUrl: (id: string | number) => `/api/scores/${id}/pdf`,
   musicxmlUrl: (id: string | number) => `/api/scores/${id}/musicxml`,
+  msczUrl: (id: string | number) => `/api/scores/${id}/mscz`,
   recordingUrl: (scoreId: string | number, recordingId: string | number) =>
     `/api/scores/${scoreId}/recordings/${recordingId}`,
   login,

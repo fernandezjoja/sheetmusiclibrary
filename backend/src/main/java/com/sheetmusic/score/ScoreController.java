@@ -10,8 +10,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sheetmusic.security.Permissions;
 import com.sheetmusic.storage.FileStorageService;
 import com.sheetmusic.storage.FileType;
 
@@ -40,23 +39,39 @@ public class ScoreController {
     }
 
     @GetMapping
-    public List<Score> list() {
-        return scores.list(isAuthenticated());
+    public List<ScoreView> list() {
+        Permissions perms = currentPerms();
+        return scores.list(perms.canSeeUnpublished()).stream()
+                .map(s -> ScoreView.from(s, perms))
+                .toList();
     }
 
     @GetMapping("/{id}")
-    public Score get(@PathVariable Long id) {
-        return scores.get(id, isAuthenticated());
+    public ScoreView get(@PathVariable Long id) {
+        Permissions perms = currentPerms();
+        return ScoreView.from(scores.get(id, perms.canSeeUnpublished()), perms);
     }
 
     @GetMapping("/{id}/musicxml")
     public ResponseEntity<Resource> getMusicxml(@PathVariable Long id) {
-        return streamFile(scores.get(id, isAuthenticated()).getMusicxmlPath(), FileType.MUSICXML);
+        return streamFile(scores.get(id, currentPerms().canSeeUnpublished()).getMusicxmlPath(), FileType.MUSICXML);
     }
 
     @GetMapping("/{id}/pdf")
     public ResponseEntity<Resource> getPdf(@PathVariable Long id) {
-        return streamFile(scores.get(id, isAuthenticated()).getPdfPath(), FileType.PDF);
+        return streamFile(scores.get(id, currentPerms().canSeeUnpublished()).getPdfPath(), FileType.PDF);
+    }
+
+    /**
+     * Streams the .mscz archive. The COLLABORATOR/ADMIN role gate lives in
+     * {@link com.sheetmusic.security.SecurityConfig} (matcher-level), so this
+     * method only runs for an authorized caller. The published-or-not 404
+     * still applies — anonymous never reaches here, but a logged-in
+     * COLLABORATOR/ADMIN gets the same visibility rules as PDF/MusicXML.
+     */
+    @GetMapping("/{id}/mscz")
+    public ResponseEntity<Resource> getMscz(@PathVariable Long id) {
+        return streamFile(scores.get(id, currentPerms().canSeeUnpublished()).getMsczPath(), FileType.MSCZ);
     }
 
     /**
@@ -72,7 +87,7 @@ public class ScoreController {
             @PathVariable Long rid,
             @RequestHeader(value = HttpHeaders.RANGE, required = false) String rangeHeader
     ) {
-        ScoreRecording rec = attachments.getRecordingForStreaming(id, rid, isAuthenticated());
+        ScoreRecording rec = attachments.getRecordingForStreaming(id, rid, currentPerms().canSeeUnpublished());
         Resource resource = storage.load(rec.getPath());
         long contentLength;
         try {
@@ -111,16 +126,7 @@ public class ScoreController {
                 .body(storage.load(path));
     }
 
-    /**
-     * True if the current request carries credentials of a real user (USER or
-     * ADMIN). Spring Security's anonymous filter installs an
-     * AnonymousAuthenticationToken even for unauthenticated requests, so we
-     * have to exclude that case explicitly.
-     */
-    private static boolean isAuthenticated() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth != null
-                && auth.isAuthenticated()
-                && !(auth instanceof AnonymousAuthenticationToken);
+    private static Permissions currentPerms() {
+        return Permissions.from(SecurityContextHolder.getContext().getAuthentication());
     }
 }

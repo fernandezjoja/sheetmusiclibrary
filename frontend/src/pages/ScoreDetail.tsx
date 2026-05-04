@@ -61,6 +61,11 @@ export default function ScoreDetail() {
             Download PDF
           </a>
         )}
+        {score.hasMscz && (
+          <a href={api.msczUrl(score.id)} target="_blank" rel="noreferrer">
+            Download .mscz
+          </a>
+        )}
       </div>
 
       {score.musicxmlPath ? (
