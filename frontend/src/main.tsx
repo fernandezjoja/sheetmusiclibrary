@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage.tsx'
 import BibliotecaHub from './pages/BibliotecaHub.tsx'
 import Octoechos from './pages/Octoechos.tsx'
 import GrandesFiestas from './pages/GrandesFiestas.tsx'
+import Panikhida from './pages/Panikhida.tsx'
 import ScoresList from './pages/ScoresList.tsx'
 import ScoreDetail from './pages/ScoreDetail.tsx'
 import AdminHub from './pages/AdminHub.tsx'
@@ -28,6 +29,14 @@ createRoot(document.getElementById('root')!).render(
             <Route path="biblioteca" element={<BibliotecaHub />} />
             <Route path="biblioteca/octoechos" element={<Octoechos />} />
             <Route path="biblioteca/grandesfiestas" element={<GrandesFiestas />} />
+            <Route
+              path="biblioteca/panikhida"
+              element={
+                <RequireAuth>
+                  <Panikhida />
+                </RequireAuth>
+              }
+            />
             <Route path="biblioteca/todo" element={<ScoresList />} />
             <Route path="scores/:id" element={<ScoreDetail />} />
             <Route
