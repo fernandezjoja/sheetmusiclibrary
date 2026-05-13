@@ -67,7 +67,7 @@ export default function AdminHub() {
                       }}
                       title="Versión de prueba — visible solo para usuarios autenticados"
                     >
-                      TEST
+                      PRUEBA
                     </span>
                   )}
                   {s.composer && (

@@ -137,7 +137,7 @@ export default function Octoechos() {
                           }}
                           title="Versión de prueba — visible solo para usuarios autenticados"
                         >
-                          TEST
+                          PRUEBA
                         </span>
                       )}
                     </Link>

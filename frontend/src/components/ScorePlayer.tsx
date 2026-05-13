@@ -45,7 +45,18 @@ function readStoredPlaybackMode(): PlaybackMode {
 type EngineInternals = {
   iterationSteps: number
   currentIterationStep: number
-  scheduler: { setIterationStep(step: number): void }
+  scheduler: {
+    setIterationStep(step: number): void
+    // Scheduler internals exposed for mid-piece tempo changes. Both fields
+    // are mutated by applyTempoChange to "freeze" the elapsed-tick count
+    // using the OLD tickDuration before switching to the new BPM — without
+    // re-anchoring, the elapsed-ms ÷ new-tickDuration math warps the
+    // cursor forward or backward at the boundary.
+    currentTick: number
+    currentTickTimestamp: number
+    readonly tickDuration: number
+    readonly audioContextTime: number
+  }
   ac: { state: AudioContextState; resume(): Promise<void> }
 }
 
@@ -86,6 +97,69 @@ function buildMeasureStarts(osmd: OpenSheetMusicDisplay): number[] {
     step++
   }
   return starts
+}
+
+/**
+ * Boundary points where the score's tempo changes, indexed by iterator step.
+ * Returned in ascending-step order so `lookupBpmAtStep` can binary-search.
+ *
+ * Implementation: OSMD's `SourceMeasure.TempoInBPM` carries the *effective*
+ * tempo forward through measures without an explicit `<sound tempo>` —
+ * confirmed in Phase 0. So we just walk measures and emit a boundary whenever
+ * the value differs from the previous one. `TempoExpressions.length > 0` is a
+ * weaker signal — a "Tempo I" / "a tempo" marking shows up there but resolves
+ * to the same numeric value, so using it would generate redundant boundaries
+ * that re-anchor the scheduler for no reason.
+ */
+type TempoBoundary = { step: number; bpm: number }
+
+function buildTempoBoundaries(
+  osmd: OpenSheetMusicDisplay,
+  measureStarts: number[],
+): TempoBoundary[] {
+  const measures = osmd.Sheet.SourceMeasures
+  const boundaries: TempoBoundary[] = []
+  let prevBpm: number | null = null
+  for (let i = 0; i < measures.length; i++) {
+    const bpm = measures[i].TempoInBPM
+    // Defensive: skip measures with no tempo info (returns 0/undefined for
+    // some MusicXML files), and skip measures the iterator never visited
+    // (measureStarts[i] === undefined). Either case would corrupt the
+    // boundaries array with garbage entries.
+    if (!bpm || bpm <= 0) continue
+    const step = measureStarts[i]
+    if (step === undefined) continue
+    if (bpm !== prevBpm) {
+      boundaries.push({ step, bpm })
+      prevBpm = bpm
+    }
+  }
+  return boundaries
+}
+
+/**
+ * Largest boundary at or before {@code step} (so we honor the most recent
+ * tempo change). Returns {@code fallback} if no boundaries exist.
+ */
+function lookupBpmAtStep(
+  boundaries: TempoBoundary[],
+  step: number,
+  fallback: number,
+): number {
+  if (boundaries.length === 0) return fallback
+  let lo = 0
+  let hi = boundaries.length - 1
+  let result = boundaries[0].bpm
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1
+    if (boundaries[mid].step <= step) {
+      result = boundaries[mid].bpm
+      lo = mid + 1
+    } else {
+      hi = mid - 1
+    }
+  }
+  return result
 }
 
 function buildClickableNotes(osmd: OpenSheetMusicDisplay): ClickableNote[] {
@@ -362,6 +436,16 @@ export default function ScorePlayer({ url }: Props) {
   const osmdRef = useRef<OpenSheetMusicDisplay | null>(null)
   const clickableNotesRef = useRef<ClickableNote[]>([])
   const measureStartsRef = useRef<number[]>([])
+  // Tempo boundaries (step → bpm), built once at score load. Used by the
+  // ITERATION handler to detect when playback crosses a tempo change.
+  const tempoBoundariesRef = useRef<TempoBoundary[]>([])
+  // The bpm we most recently applied to the engine. The ITERATION handler
+  // compares against this to know when a boundary has been crossed and a
+  // tempo change is due.
+  const currentBpmRef = useRef<number>(120)
+  // Default opening tempo from the MusicXML, used as the fallback when
+  // lookupBpmAtStep finds no boundaries (e.g. score with no tempo info).
+  const defaultBpmRef = useRef<number>(120)
   // Set to true after a seek to step > 0 so the next ITERATION event can
   // undo the audio player's automatic cursor advance (which would put cursor
   // on the note *after* the one we landed on).
@@ -419,6 +503,42 @@ export default function ScorePlayer({ url }: Props) {
       el.style.removeProperty('--voice-highlight-color')
     }
     activeHighlightsRef.current = []
+  }
+
+  /**
+   * Mid-piece tempo change. Called from the ITERATION handler when playback
+   * crosses a tempo boundary in the score.
+   *
+   * The naïve thing — just `engine.setBpm(newBpm)` — looks right but warps
+   * playback at the boundary. The scheduler tracks its position as
+   *
+   *     currentTick + (audioContextTime - currentTickTimestamp) / tickDuration
+   *
+   * If tickDuration changes without resetting currentTickTimestamp, the
+   * elapsed real-time gets divided by the NEW tickDuration → currentTick
+   * jumps forward or backward depending on whether the new tempo is faster
+   * or slower. So we "freeze" the elapsed-tick count using the OLD
+   * tickDuration first, re-anchor currentTickTimestamp to "now," and only
+   * then call setBpm to flip tickDuration.
+   *
+   * Side effect: ~1-2 notes near the boundary may still play at the old
+   * tempo because the scheduler pre-queues ~500ms of audio ahead of the
+   * cursor — those callbacks are already scheduled on the AudioContext at
+   * the old timings and can't be undone. Acceptable for chant-scale tempo
+   * changes; the "smear" is half a beat at slow tempos.
+   */
+  const applyTempoChange = (newBpm: number) => {
+    const engine = engineRef.current
+    if (!engine) return
+    const scheduler = (engine as unknown as EngineInternals).scheduler
+    const oldTickDuration = scheduler.tickDuration
+    if (oldTickDuration > 0) {
+      const elapsedMs = scheduler.audioContextTime - scheduler.currentTickTimestamp
+      scheduler.currentTick += Math.round(elapsedMs / oldTickDuration)
+      scheduler.currentTickTimestamp = scheduler.audioContextTime
+    }
+    engine.setBpm(newBpm)
+    currentBpmRef.current = newBpm
   }
 
   const applyHighlightsForStep = (step: number) => {
@@ -499,11 +619,11 @@ export default function ScorePlayer({ url }: Props) {
       // canvas width.
       newSystemFromXML: true,
       newPageFromXML: true,
-      // Tempo info (♩=N markings) is needed in the MusicXML so the audio
-      // engine respects the chant pulse, but we don't want to clutter the
-      // visible score with it. Skip drawing entirely — the iterator still
-      // reads the tempo data from the source measures for playback.
-      drawMetronomeMarks: false,
+      // Tempo info (♩=N markings) renders normally so the user can see what
+      // BPMs the playback engine is using. They're a recommendation from the
+      // arranger, not a hard rule — the player UI's advisory note spells
+      // that out so users know the printed PDF doesn't include them.
+      drawMetronomeMarks: true,
     })
     // Add some breathing room around header text (default is 1 OSMD unit each,
     // which causes title / subtitle / composer to crowd together).
@@ -534,6 +654,15 @@ export default function ScorePlayer({ url }: Props) {
           if (state === PlaybackState.STOPPED) {
             setCurrentStep(0)
             clearActiveHighlights()
+            // After Stop, replay should open at the score's default tempo,
+            // not at whichever tempo was in effect before stopping. Reset
+            // the engine + our tracking ref so the first ITERATION after
+            // Play sees a clean default-bpm baseline.
+            const engine = engineRef.current
+            if (engine && currentBpmRef.current !== defaultBpmRef.current) {
+              engine.setBpm(defaultBpmRef.current)
+              currentBpmRef.current = defaultBpmRef.current
+            }
           }
         })
 
@@ -543,6 +672,19 @@ export default function ScorePlayer({ url }: Props) {
         const internals = engine as unknown as EngineInternals
         engine.on(PlaybackEvent.ITERATION, () => {
           if (cancelled) return
+          // Detect mid-piece tempo changes. The map is sparse — most steps
+          // return the same bpm we already have, so the no-op check below
+          // makes this cheap. When playback crosses a boundary, fire
+          // applyTempoChange to re-anchor the scheduler before changing
+          // wholeNoteLength (see comment on applyTempoChange).
+          const expectedBpm = lookupBpmAtStep(
+            tempoBoundariesRef.current,
+            internals.currentIterationStep,
+            defaultBpmRef.current,
+          )
+          if (expectedBpm !== currentBpmRef.current) {
+            applyTempoChange(expectedBpm)
+          }
           // The audio player's iterationCallback auto-advances the cursor on
           // every iteration after step 0 (`if (currentIterationStep > 0)
           // cursor.next()`). After a seek, we want the *clicked* note to play
@@ -575,6 +717,14 @@ export default function ScorePlayer({ url }: Props) {
         // transforms, scroll offsets, and zoom for us.
         clickableNotesRef.current = buildClickableNotes(osmd)
         measureStartsRef.current = buildMeasureStarts(osmd)
+        // Build the tempo map and seed currentBpmRef with whatever the engine
+        // is actually at right now (PlaybackEngine.loadScore called setBpm
+        // internally with sheet.DefaultStartTempoInBpm). So at first
+        // iteration, expectedBpm == currentBpmRef and we don't spuriously
+        // fire a tempo change unless the score actually has one at step 0.
+        tempoBoundariesRef.current = buildTempoBoundaries(osmd, measureStartsRef.current)
+        defaultBpmRef.current = osmd.Sheet.DefaultStartTempoInBpm ?? 120
+        currentBpmRef.current = defaultBpmRef.current
 
         const builtVoices = buildVoiceInfos(engine.scoreInstruments)
         // Pre-populate voicesRef so the highlight logic can read live mute
@@ -603,6 +753,9 @@ export default function ScorePlayer({ url }: Props) {
       osmdRef.current = null
       clickableNotesRef.current = []
       measureStartsRef.current = []
+      tempoBoundariesRef.current = []
+      currentBpmRef.current = 120
+      defaultBpmRef.current = 120
       noteHighlightsByStepRef.current = new Map()
       activeHighlightsRef.current = []
       container.innerHTML = ''
@@ -784,6 +937,19 @@ export default function ScorePlayer({ url }: Props) {
     // taps chain off it instead of off the live (and possibly already-
     // advanced) engine step. Playback's own cursor advances don't write here.
     lastUserSeekRef.current = { step: target, at: Date.now() }
+    // Apply the tempo in effect at the seek target. Unlike the playback path,
+    // no scheduler re-anchor is needed: jumpToStep above already reset the
+    // scheduler's currentTick, and play() (if it resumes) re-anchors
+    // currentTickTimestamp on its own. So plain setBpm is enough here.
+    const targetBpm = lookupBpmAtStep(
+      tempoBoundariesRef.current,
+      target,
+      defaultBpmRef.current,
+    )
+    if (targetBpm !== currentBpmRef.current) {
+      engine.setBpm(targetBpm)
+      currentBpmRef.current = targetBpm
+    }
 
     // jumpToStep deliberately sets the scheduler one step ahead of the cursor
     // (so a normal "resume from here" plays the next note). We want the

@@ -76,7 +76,7 @@ export default function ScoreDetail() {
             }}
             title="Versión de prueba — visible solo para usuarios autenticados"
           >
-            TEST
+            PRUEBA
           </span>
         )}
       </h2>
@@ -150,10 +150,12 @@ export default function ScoreDetail() {
               </li>
               <li style={{ marginBottom: 4 }}>
                 El reproductor da una <em>idea general</em> de cómo debería
-                sonar la música. Los tiempos exactos pueden variar respecto a
-                la interpretación real de un coro — consulta las{' '}
-                <strong>grabaciones</strong> más abajo para una referencia más
-                fiel.
+                sonar la música, no es una representación exacta de la partitura oficial. Los tempos (♩=N) que aparecen sobre el
+                pentagrama son una <em>recomendación</em> — no figuran en el
+                PDF y no son una regla estricta. Los tiempos exactos pueden
+                variar respecto a la interpretación real de un coro — en el
+                caso que haya, puedes consultar las <strong>grabaciones</strong>{' '}
+                más abajo para una referencia más fiel.
               </li>
               <li>
                 El comportamiento puede variar según el navegador. Disculpa

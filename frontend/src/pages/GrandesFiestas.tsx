@@ -154,7 +154,7 @@ export default function GrandesFiestas() {
                             }}
                             title="Versión de prueba — visible solo para usuarios autenticados"
                           >
-                            TEST
+                            PRUEBA
                           </span>
                         )}
                       </Link>

@@ -61,7 +61,7 @@ export default function ScoresList() {
                     }}
                     title="Versión de prueba — visible solo para usuarios autenticados"
                   >
-                    TEST
+                    PRUEBA
                   </span>
                 )}
               </Link>
