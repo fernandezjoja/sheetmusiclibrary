@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, type Score } from '../api'
+import { api, type ScoreListItem } from '../api'
+import { usePageTitle } from '../usePageTitle'
 
 export default function AdminHub() {
-  const [scores, setScores] = useState<Score[] | null>(null)
+  usePageTitle('Administración')
+  const [scores, setScores] = useState<ScoreListItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {

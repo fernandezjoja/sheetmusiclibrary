@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, type Score } from '../api'
+import { api, type ScoreListItem } from '../api'
 import {
   attributionParts,
   freeFormTags,
   liturgicalRoleParts,
 } from '../tags'
+import { usePageTitle } from '../usePageTitle'
 
 /**
  * The Twelve Great Feasts in liturgical-year order (Sept → Aug, starting with
@@ -36,30 +37,31 @@ const FEASTS: Feast[] = [
   { position: 10, contextTags: ['context:pentecostes'], label: 'Pentecostés' },
   { position: 11, contextTags: ['context:transfiguracion'], label: 'Transfiguración' },
   { position: 12, contextTags: ['context:dormicion'], label: 'Dormición de la Theotokos' },
-  { position: 13, contextTags: ['context:pascua', 'context:pascha'], label: 'Pascha' },
+  { position: 13, contextTags: ['context:pascua'], label: 'Pascua' },
 ]
 
 // Within each feast, sort by piece type using the same priority as the
 // Octoechos page. Anything unmatched lands at the bottom of its feast group
 // rather than disappearing.
-const PIECE_TYPE_MATCHERS: ((s: Score) => boolean)[] = [
+const PIECE_TYPE_MATCHERS: ((s: ScoreListItem) => boolean)[] = [
   (s) => s.tags.includes('service:tropario'),
   (s) => s.tags.includes('service:contaquio'),
   (s) => s.tags.includes('slot:proquimeno'),
   (s) => s.tags.includes('slot:aleluya'),
 ]
 
-function pieceTypePriority(score: Score): number {
+function pieceTypePriority(score: ScoreListItem): number {
   const idx = PIECE_TYPE_MATCHERS.findIndex((match) => match(score))
   return idx === -1 ? Number.POSITIVE_INFINITY : idx
 }
 
-function scoreBelongsTo(score: Score, feast: Feast): boolean {
+function scoreBelongsTo(score: ScoreListItem, feast: Feast): boolean {
   return feast.contextTags.some((c) => score.tags.includes(c))
 }
 
 export default function GrandesFiestas() {
-  const [scores, setScores] = useState<Score[] | null>(null)
+  usePageTitle('Grandes Fiestas')
+  const [scores, setScores] = useState<ScoreListItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export default function GrandesFiestas() {
   // Trisagion-substitute "Cuantos Habéis Sido Bautizados", tagged with several
   // contexts) appears in each of its feast sections — intentional, since it's
   // legitimately sung at each of those feasts.
-  const buckets: { feast: Feast; pieces: Score[] }[] = FEASTS.map((feast) => ({
+  const buckets: { feast: Feast; pieces: ScoreListItem[] }[] = FEASTS.map((feast) => ({
     feast,
     pieces: scores
       .filter((s) => scoreBelongsTo(s, feast))
@@ -89,7 +91,7 @@ export default function GrandesFiestas() {
       <h2>Grandes Fiestas</h2>
       <p style={{ color: 'var(--text)' }}>
         Las Doce Grandes Fiestas, en orden del año litúrgico (1 = Natividad de
-        la Theotokos, 12 = Dormición). Pascha aparece al final como Fiesta de
+        la Theotokos, 12 = Dormición) y Pascua al final como Fiesta de
         Fiestas.
       </p>
 

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, type Score } from '../api'
+import { api, type ScoreListItem } from '../api'
 import {
   attributionParts,
   findTag,
   freeFormTags,
   liturgicalRoleParts,
 } from '../tags'
+import { usePageTitle } from '../usePageTitle'
 
 // Piece-type priority within each tone. The list order IS the display order:
 //   1) Tropario   → service:tropario
@@ -15,19 +16,19 @@ import {
 //   4) Aleluya    → slot:aleluya
 // Anything else gets pushed to the bottom of its tone group (priority Infinity)
 // so unexpected pieces still show up rather than silently disappearing.
-const PIECE_TYPE_MATCHERS: ((s: Score) => boolean)[] = [
+const PIECE_TYPE_MATCHERS: ((s: ScoreListItem) => boolean)[] = [
   (s) => s.tags.includes('service:tropario'),
   (s) => s.tags.includes('service:contaquio'),
   (s) => s.tags.includes('slot:proquimeno'),
   (s) => s.tags.includes('slot:aleluya'),
 ]
 
-function pieceTypePriority(score: Score): number {
+function pieceTypePriority(score: ScoreListItem): number {
   const idx = PIECE_TYPE_MATCHERS.findIndex((match) => match(score))
   return idx === -1 ? Number.POSITIVE_INFINITY : idx
 }
 
-function toneNumber(score: Score): number {
+function toneNumber(score: ScoreListItem): number {
   const tag = findTag(score.tags, 'tone:')
   if (!tag) return Number.POSITIVE_INFINITY
   const n = parseInt(tag.slice('tone:'.length), 10)
@@ -35,7 +36,8 @@ function toneNumber(score: Score): number {
 }
 
 export default function Octoechos() {
-  const [scores, setScores] = useState<Score[] | null>(null)
+  usePageTitle('Octoechos')
+  const [scores, setScores] = useState<ScoreListItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export default function Octoechos() {
 
   // Group by tone for visual rendering. The sort above guarantees the order
   // *within* each tone is already correct (Tropario → Aleluya).
-  const byTone = new Map<number, Score[]>()
+  const byTone = new Map<number, ScoreListItem[]>()
   for (const s of octoechos) {
     const tone = toneNumber(s)
     if (!byTone.has(tone)) byTone.set(tone, [])

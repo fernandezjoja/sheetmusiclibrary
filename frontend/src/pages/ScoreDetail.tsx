@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, type Score } from '../api'
 import { useAuth } from '../auth'
+import { usePageTitle } from '../usePageTitle'
 import ScorePlayer from '../components/ScorePlayer'
 import YouTubeEmbed from '../components/YouTubeEmbed'
 
@@ -10,6 +11,7 @@ export default function ScoreDetail() {
   const { user } = useAuth()
   const [score, setScore] = useState<Score | null>(null)
   const [error, setError] = useState<{ message: string; status?: number } | null>(null)
+  usePageTitle(score?.title)
 
   useEffect(() => {
     if (!id) return

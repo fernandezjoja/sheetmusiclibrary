@@ -10,6 +10,7 @@ import {
 import AdminPendingRecordings from '../components/AdminPendingRecordings'
 import AdminPendingReferences from '../components/AdminPendingReferences'
 import TagReference from '../components/TagReference'
+import { usePageTitle } from '../usePageTitle'
 
 const fieldStyle = {
   display: 'flex',
@@ -28,6 +29,7 @@ const inputStyle = {
 }
 
 export default function AdminUpload() {
+  usePageTitle('Subir partitura')
   const [title, setTitle] = useState('')
   const [composer, setComposer] = useState('')
   const [tagsRaw, setTagsRaw] = useState('')

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError, type Score } from '../api'
 import AdminRecordingsSection from '../components/AdminRecordingsSection'
 import AdminReferencesSection from '../components/AdminReferencesSection'
+import { usePageTitle } from '../usePageTitle'
 
 const fieldStyle = {
   display: 'flex',
@@ -30,6 +31,7 @@ export default function AdminEdit() {
   // sections re-render. Updated separately from the form-input state because
   // the form fields preserve user-in-progress edits independent of refetches.
   const [score, setScore] = useState<Score | null>(null)
+  usePageTitle(score ? `Editar ${score.title}` : 'Editar partitura')
 
   const [title, setTitle] = useState('')
   const [composer, setComposer] = useState('')

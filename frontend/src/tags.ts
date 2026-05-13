@@ -1,5 +1,11 @@
-import type { Score } from './api'
 import { TAG_DISPLAY, isTagHidden } from './tagDisplay'
+
+/**
+ * Minimum shape needed by the tag helpers below. Both {@link Score} (the full
+ * detail payload) and {@link ScoreListItem} (the slim listing payload) satisfy
+ * it structurally, so the same helpers work for list pages and detail pages.
+ */
+type Taggable = { tags: string[]; composer?: string | null }
 
 /**
  * Tag formatting helpers for the structured tag conventions documented
@@ -39,7 +45,7 @@ export function findTag(tags: string[], prefix: string): string | undefined {
  * Right-side attribution: "Composer · Chant Style" / "Composer" / "Chant Style"
  * Returns [] if neither is available — callers can decide whether to show nothing.
  */
-export function attributionParts(score: Score): string[] {
+export function attributionParts(score: Taggable): string[] {
   const parts: string[] = []
   const composer = score.composer?.trim()
   const chant = findTag(score.tags, 'chant:')
@@ -52,7 +58,7 @@ export function attributionParts(score: Score): string[] {
  * Liturgical role chain for the row's secondary line:
  *   Service · Slot · Context (when ≠ default) · Tone
  */
-export function liturgicalRoleParts(score: Score): string[] {
+export function liturgicalRoleParts(score: Taggable): string[] {
   const parts: string[] = []
   const service = findTag(score.tags, 'service:')
   const slot = findTag(score.tags, 'slot:')
@@ -66,6 +72,6 @@ export function liturgicalRoleParts(score: Score): string[] {
 }
 
 /** Tags without a `prefix:` portion (legacy / un-namespaced). */
-export function freeFormTags(score: Score): string[] {
+export function freeFormTags(score: Taggable): string[] {
   return score.tags.filter((t) => !t.includes(':') && !isTagHidden(t))
 }

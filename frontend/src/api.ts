@@ -42,6 +42,23 @@ export type Score = {
   references: ScoreReference[]
 }
 
+/**
+ * Slim shape returned by GET /api/scores (the listing endpoint). Carries
+ * only what the library / admin / Octoechos / Grandes-Fiestas pages render
+ * — no recordings, references, notes, or raw file paths. Use {@link Score}
+ * (via api.getScore) when you need the full nested data.
+ */
+export type ScoreListItem = {
+  id: number
+  title: string
+  composer: string | null
+  tags: string[]
+  published: boolean
+  hasMusicxml: boolean
+  hasPdf: boolean
+  hasMscz: boolean
+}
+
 export type ScoreMetadata = {
   title: string
   composer: string | null
@@ -392,7 +409,7 @@ async function updateScore(id: string | number, params: UpdateScoreParams): Prom
 }
 
 export const api = {
-  listScores: () => getJson<Score[]>('/api/scores'),
+  listScores: () => getJson<ScoreListItem[]>('/api/scores'),
   getScore: (id: string | number) => getJson<Score>(`/api/scores/${id}`),
   pdfUrl: (id: string | number) => `/api/scores/${id}/pdf`,
   musicxmlUrl: (id: string | number) => `/api/scores/${id}/musicxml`,

@@ -39,11 +39,8 @@ public class ScoreController {
     }
 
     @GetMapping
-    public List<ScoreView> list() {
-        Permissions perms = currentPerms();
-        return scores.list(perms.canSeeUnpublished()).stream()
-                .map(s -> ScoreView.from(s, perms))
-                .toList();
+    public List<ScoreListItem> list() {
+        return scores.listSlim(currentPerms());
     }
 
     @GetMapping("/{id}")

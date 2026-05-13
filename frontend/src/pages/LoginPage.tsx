@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { ApiError } from '../api'
+import { usePageTitle } from '../usePageTitle'
 
 const fieldStyle = {
   display: 'flex',
@@ -22,6 +23,7 @@ const inputStyle = {
 type LocationState = { from?: { pathname?: string } } | null
 
 export default function LoginPage() {
+  usePageTitle('Iniciar sesión')
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.sheetmusic.security.Permissions;
 import com.sheetmusic.storage.FileStorageService;
 import com.sheetmusic.storage.FileType;
 
@@ -23,14 +24,34 @@ public class ScoreService {
     }
 
     /**
-     * @param includeUnpublished true for logged-in users (USER or ADMIN);
-     *                           false for anonymous, who only see published.
+     * Slim projection for every listing endpoint: returns only the columns the
+     * library / admin / Octoechos / Grandes-Fiestas pages render. Recordings,
+     * references, notes, and raw file paths stay off the wire — touching them
+     * here would re-introduce the per-row lazy-collection fetches that bog
+     * down Neon round-trips. Projection happens inside the transaction so
+     * lazy proxies never escape.
+     *
+     * <p>{@code perms.canSeeUnpublished()} gates whether unpublished (test)
+     * scores are visible. {@code perms.canDownloadMscz()} gates the
+     * {@code hasMscz} flag the same way {@link ScoreView} does for detail.
      */
     @Transactional(readOnly = true)
-    public List<Score> list(boolean includeUnpublished) {
-        List<Score> scores = includeUnpublished ? repo.findAll() : repo.findByPublishedTrue();
-        scores.forEach(ScoreService::initializeAttachments);
-        return scores;
+    public List<ScoreListItem> listSlim(Permissions perms) {
+        List<Score> scores = perms.canSeeUnpublished()
+                ? repo.findAll()
+                : repo.findByPublishedTrue();
+        boolean canSeeMscz = perms.canDownloadMscz();
+        return scores.stream()
+                .map(s -> new ScoreListItem(
+                        s.getId(),
+                        s.getTitle(),
+                        s.getComposer(),
+                        s.getTags(),
+                        s.isPublished(),
+                        s.getMusicxmlPath() != null,
+                        s.getPdfPath() != null,
+                        s.getMsczPath() != null && canSeeMscz))
+                .toList();
     }
 
     /**
