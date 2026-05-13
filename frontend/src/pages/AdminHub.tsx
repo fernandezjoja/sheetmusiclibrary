@@ -12,25 +12,27 @@ export default function AdminHub() {
 
   return (
     <article>
-      <h2>Admin</h2>
+      <h2>Administración</h2>
 
       <section style={{ marginBottom: 32 }}>
-        <h3 style={{ marginTop: 0 }}>Upload</h3>
-        <p>Add a new score to the library.</p>
+        <h3 style={{ marginTop: 0 }}>Subir</h3>
+        <p>Agregar una nueva partitura a la biblioteca.</p>
         <p>
-          <Link to="/admin/upload">→ Upload a new score</Link>
+          <Link to="/admin/upload" className="btn-primary">
+            + Subir nueva partitura
+          </Link>
         </p>
       </section>
 
       <section>
-        <h3>Edit</h3>
-        <p>Replace files or update the metadata of an existing score.</p>
+        <h3>Editar</h3>
+        <p>Reemplazar archivos o actualizar los metadatos de una partitura existente.</p>
 
-        {error && <p role="alert">Error loading scores: {error}</p>}
-        {!scores && !error && <p>Loading…</p>}
+        {error && <p role="alert">Error al cargar las partituras: {error}</p>}
+        {!scores && !error && <p>Cargando…</p>}
         {scores && scores.length === 0 && (
           <p style={{ color: 'var(--text)' }}>
-            No scores yet — upload one first.
+            No hay partituras todavía — sube una primero.
           </p>
         )}
         {scores && scores.length > 0 && (
@@ -61,6 +63,7 @@ export default function AdminHub() {
                         color: '#8a5a00',
                         verticalAlign: 'middle',
                       }}
+                      title="Versión de prueba — visible solo para usuarios autenticados"
                     >
                       TEST
                     </span>
@@ -69,7 +72,7 @@ export default function AdminHub() {
                     <span style={{ marginLeft: 6 }}>— {s.composer}</span>
                   )}
                 </span>
-                <Link to={`/admin/edit/${s.id}`}>Edit</Link>
+                <Link to={`/admin/edit/${s.id}`}>Editar</Link>
               </li>
             ))}
           </ul>

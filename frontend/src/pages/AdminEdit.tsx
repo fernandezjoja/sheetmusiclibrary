@@ -136,7 +136,7 @@ export default function AdminEdit() {
   const handleDelete = async () => {
     if (!id) return
     const ok = window.confirm(
-      `Delete "${title}"?\n\nThis removes the score, all its files, and any attached recordings, references, and notes. Cannot be undone.`,
+      `¿Eliminar "${title}"?\n\nEsto quita la partitura, todos sus archivos, y cualquier grabación, referencia o nota adjunta. No se puede deshacer.`,
     )
     if (!ok) return
     setDeleting(true)
@@ -144,7 +144,7 @@ export default function AdminEdit() {
     setFieldErrors([])
     try {
       await api.deleteScore(id)
-      navigate('/biblioteca', { replace: true })
+      navigate('/biblioteca/todo', { replace: true })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e))
       setDeleting(false)
@@ -152,20 +152,20 @@ export default function AdminEdit() {
   }
 
   if (loadStatus === 'loading') {
-    return <p>Loading score…</p>
+    return <p>Cargando partitura…</p>
   }
   if (loadStatus === 'error') {
     return (
       <div>
-        <p role="alert">Failed to load score: {loadError}</p>
-        <Link to="/biblioteca">← Back to all scores</Link>
+        <p role="alert">Error al cargar la partitura: {loadError}</p>
+        <Link to="/biblioteca/todo">← Volver a la biblioteca</Link>
       </div>
     )
   }
 
   return (
     <article>
-      <h2>Edit score #{id}</h2>
+      <h2>Editar «{score?.title ?? `partitura #${id}`}»</h2>
 
       {result && (
         <div
@@ -178,10 +178,10 @@ export default function AdminEdit() {
             background: 'var(--code-bg)',
           }}
         >
-          ✓ Updated <strong>{result.title}</strong>{' '}
-          {result.composer ? `by ${result.composer}` : ''}{' '}
-          {result.published ? '(published)' : '(test — admins only)'} —{' '}
-          <Link to={`/scores/${result.id}`}>open it</Link>.
+          ✓ Actualizada <strong>{result.title}</strong>{' '}
+          {result.composer ? `por ${result.composer}` : ''}{' '}
+          {result.published ? '(publicada)' : '(prueba — solo admins)'} —{' '}
+          <Link to={`/scores/${result.id}`}>abrir</Link>.
         </div>
       )}
 
@@ -208,7 +208,7 @@ export default function AdminEdit() {
 
       <form onSubmit={handleSubmit} style={{ maxWidth: 560 }}>
         <div style={fieldStyle}>
-          <label htmlFor="title">Title *</label>
+          <label htmlFor="title">Título *</label>
           <input
             id="title"
             type="text"
@@ -220,7 +220,7 @@ export default function AdminEdit() {
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="composer">Composer</label>
+          <label htmlFor="composer">Compositor</label>
           <input
             id="composer"
             type="text"
@@ -232,19 +232,19 @@ export default function AdminEdit() {
 
         <div style={fieldStyle}>
           <label htmlFor="tags">
-            Tags <span style={{ color: 'var(--text)' }}>(comma-separated)</span>
+            Etiquetas <span style={{ color: 'var(--text)' }}>(separadas por coma)</span>
           </label>
           <input
             id="tags"
             type="text"
             value={tagsRaw}
             onChange={(e) => setTagsRaw(e.target.value)}
-            placeholder="sacred, romantic"
+            placeholder="service:liturgy, language:english, voicing:satb"
             style={inputStyle}
           />
           {tags.length > 0 && (
             <small style={{ color: 'var(--text)' }}>
-              Will be saved as: {tags.map((t) => `#${t}`).join(' ')}
+              Se guardarán como: {tags.map((t) => `#${t}`).join(' ')}
             </small>
           )}
         </div>
@@ -258,7 +258,7 @@ export default function AdminEdit() {
             marginBottom: 16,
           }}
         >
-          <legend>Visibility</legend>
+          <legend>Visibilidad</legend>
           <label
             style={{
               display: 'flex',
@@ -273,24 +273,24 @@ export default function AdminEdit() {
               onChange={(e) => setPublished(e.target.checked)}
             />
             <span>
-              <strong>Published</strong>
+              <strong>Publicada</strong>
               <br />
               <small style={{ color: 'var(--text)' }}>
                 {published
-                  ? 'Visible to anonymous visitors. Uncheck to revert to test.'
-                  : 'Test version — visible only to signed-in users. Check to make it public.'}
+                  ? 'Visible para visitantes anónimos. Desmarca para volver a versión de prueba.'
+                  : 'Versión de prueba — visible solo para usuarios autenticados. Marca para publicarla.'}
               </small>
             </span>
           </label>
         </fieldset>
 
         <p style={{ color: 'var(--text)', fontSize: '0.9rem', marginTop: 16 }}>
-          File uploads below are <em>optional</em>. Leave blank to keep the
-          existing files; pick a file to replace it.
+          La carga de archivos abajo es <em>opcional</em>. Déjala en blanco para
+          conservar los archivos actuales; selecciona uno para reemplazarlo.
         </p>
 
         <div style={fieldStyle}>
-          <label htmlFor="musicxml">Replace MusicXML</label>
+          <label htmlFor="musicxml">Reemplazar MusicXML</label>
           <input
             id="musicxml"
             type="file"
@@ -300,7 +300,7 @@ export default function AdminEdit() {
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="pdf">Replace PDF</label>
+          <label htmlFor="pdf">Reemplazar PDF</label>
           <input
             id="pdf"
             type="file"
@@ -310,7 +310,7 @@ export default function AdminEdit() {
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="mscz">Replace MuseScore archive (.mscz)</label>
+          <label htmlFor="mscz">Reemplazar archivo de MuseScore (.mscz)</label>
           <input
             id="mscz"
             type="file"
@@ -319,8 +319,13 @@ export default function AdminEdit() {
           />
         </div>
 
-        <button type="submit" disabled={!canSubmit} style={{ marginTop: 8 }}>
-          {submitting ? 'Saving…' : 'Save changes'}
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="btn-primary"
+          style={{ marginTop: 8 }}
+        >
+          {submitting ? 'Guardando…' : 'Guardar cambios'}
         </button>
       </form>
 
@@ -340,30 +345,24 @@ export default function AdminEdit() {
           maxWidth: 560,
         }}
       >
-        <legend style={{ color: '#c44' }}>Danger zone</legend>
+        <legend style={{ color: '#c44' }}>Zona peligrosa</legend>
         <p style={{ margin: '0 0 12px', color: 'var(--text)', fontSize: '0.9rem' }}>
-          Deleting removes the score, its files (MusicXML, PDF, .mscz), and all
-          attached recordings, references, and notes. Cannot be undone.
+          Eliminar quita la partitura, sus archivos (MusicXML, PDF, .mscz), y
+          todas las grabaciones, referencias y notas adjuntas. No se puede
+          deshacer.
         </p>
         <button
           type="button"
           onClick={handleDelete}
           disabled={deleting || submitting || loadStatus !== 'loaded'}
-          style={{
-            background: '#c44',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 4,
-            padding: '6px 12px',
-            cursor: deleting ? 'wait' : 'pointer',
-          }}
+          className="btn-danger"
         >
-          {deleting ? 'Deleting…' : 'Delete this score'}
+          {deleting ? 'Eliminando…' : 'Eliminar partitura'}
         </button>
       </fieldset>
 
       <p style={{ marginTop: 24 }}>
-        <Link to={`/scores/${id}`}>← Back to score</Link>
+        <Link to={`/scores/${id}`}>← Volver a la partitura</Link>
       </p>
     </article>
   )

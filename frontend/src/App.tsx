@@ -16,11 +16,14 @@ function App() {
       <header className="app-header">
         <Link to="/" className="app-title">Biblioteca de Música Litúrgica</Link>
         <nav className="app-nav">
+          <Link to="/biblioteca" className="app-nav-link">
+            Biblioteca
+          </Link>
           {/* Admin link is intentionally not shown to anonymous viewers — the
               URL is reachable directly, but we don't advertise it. */}
           {user?.role === 'ADMIN' && (
             <Link to="/admin" className="app-nav-link">
-              Admin
+              Administración
             </Link>
           )}
           {!loading && (
@@ -30,11 +33,11 @@ function App() {
                 onClick={handleLogout}
                 className="app-nav-link app-nav-button"
               >
-                Sign out ({user.username})
+                Cerrar sesión ({user.username})
               </button>
             ) : (
               <Link to="/login" className="app-nav-link">
-                Sign in
+                Iniciar sesión
               </Link>
             )
           )}

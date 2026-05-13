@@ -448,12 +448,10 @@ export default function ScorePlayer({ url }: Props) {
     const osmd = new OpenSheetMusicDisplay(container, {
       autoResize: true,
       backend: 'svg',
-      // Render everything OSMD knows from the MusicXML's header — title,
-      // subtitle, composer, lyricist, free-form credits — so the in-browser
-      // score area visually mirrors the PDF as closely as possible.
-      // ScoreDetail also shows title + composer in HTML above the score; the
-      // duplication is intentional (HTML header is searchable / sortable; the
-      // typeset OSMD header preserves the printed-score look).
+      // ScoreDetail already shows the title (from the DB) above the player,
+      // so suppress OSMD's typeset title to avoid the duplication.
+      // Subtitle / composer / lyricist / credits are kept so MusicXML-only
+      // metadata still surfaces in the typeset header.
       drawTitle: true,
       drawSubtitle: true,
       drawComposer: true,
@@ -482,12 +480,19 @@ export default function ScorePlayer({ url }: Props) {
       // (`<print new-system>` / `<print new-page>` elements).
       // Requires the source MusicXML to actually include them — in MuseScore,
       // enable Preferences → Import & Export → MusicXML → "Export layout"
-      // before exporting.
+      // before exporting, and (if you want a specific look) drag system-break
+      // marks at the measures where you want lines to wrap. The wide
+      // .score-inner canvas (CSS) gives OSMD enough horizontal room that
+      // authored breaks are typically the only ones that fire — width-driven
+      // auto-wraps only kick in if you author a system that exceeds the
+      // canvas width.
       newSystemFromXML: true,
       newPageFromXML: true,
-      // Compute layout against Letter-paper proportions so measures-per-line
-      // matches the MuseScore PDF more closely. Use 'A4_P' if authoring in A4.
-      pageFormat: 'Letter_P',
+      // Tempo info (♩=N markings) is needed in the MusicXML so the audio
+      // engine respects the chant pulse, but we don't want to clutter the
+      // visible score with it. Skip drawing entirely — the iterator still
+      // reads the tempo data from the source measures for playback.
+      drawMetronomeMarks: false,
     })
     // Add some breathing room around header text (default is 1 OSMD unit each,
     // which causes title / subtitle / composer to crowd together).
@@ -495,6 +500,10 @@ export default function ScorePlayer({ url }: Props) {
     osmd.EngravingRules.TitleBottomDistance = 4
     osmd.EngravingRules.SheetMinimumDistanceBetweenTitleAndSubtitle = 3
     osmd.EngravingRules.SystemComposerDistance = 4
+    // Tighten note-to-note spacing within each measure (default 0.85). Chant
+    // is sparse — long notes, lyrics-driven layout — so the default leaves
+    // measures looking airy. 0.7 packs them more like the printed PDF.
+    osmd.EngravingRules.VoiceSpacingMultiplierVexflow = 0.7
     osmdRef.current = osmd
 
     ;(async () => {
@@ -605,9 +614,10 @@ export default function ScorePlayer({ url }: Props) {
     }
   }, [voices])
 
-  // Responsive scale: render OSMD at a fixed reference width (.score-inner is
-  // 960px in CSS) and shrink it via CSS transform when the viewport is
-  // narrower. Layout stays identical to desktop; only the visual size shrinks.
+  // Responsive scale: OSMD lays out the score against .score-inner's fixed
+  // CSS width (see ScorePlayer.css) — the same canvas regardless of viewport.
+  // On narrower viewports we shrink the entire rendered SVG with a CSS
+  // transform — no reflow, identical layout, just smaller pixels.
   // The browser's transform-aware getBoundingClientRect keeps click hit-tests
   // and cursor scrollIntoView correct under scaling.
   useEffect(() => {
@@ -616,11 +626,14 @@ export default function ScorePlayer({ url }: Props) {
     const inner = containerRef.current
     if (!outer || !inner) return
 
-    const REFERENCE_WIDTH = 960
-
     const update = () => {
       const outerW = outer.clientWidth
-      const scale = Math.min(1, outerW / REFERENCE_WIDTH)
+      // The score's natural width is per-score, so read it off the rendered
+      // inner box (transform doesn't affect offsetWidth — layout box is
+      // pre-transform).
+      const innerW = inner.offsetWidth
+      if (innerW === 0) return
+      const scale = Math.min(1, outerW / innerW)
       if (scale === 1) {
         inner.style.transform = ''
         outer.style.height = ''
@@ -849,8 +862,8 @@ export default function ScorePlayer({ url }: Props) {
 
   return (
     <div>
-      {status === 'loading-score' && <p>Rendering score…</p>}
-      {status === 'loading-audio' && <p>Loading audio engine…</p>}
+      {status === 'loading-score' && <p>Cargando partitura…</p>}
+      {status === 'loading-audio' && <p>Cargando audio…</p>}
       {status === 'error' && (
         <p role="alert">Failed to render score: {errorMessage}</p>
       )}

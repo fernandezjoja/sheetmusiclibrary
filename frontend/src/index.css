@@ -93,3 +93,74 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Button hierarchy. Apply via class — works on <button> and <a> alike.
+   - .btn-primary: main confirm/submit action (one per form).
+   - .btn-secondary: outlined chip for navigation-like or alternate actions
+     (download, edit, etc.).
+   - .btn-danger: destructive (delete). */
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover:not(:disabled) {
+  background: #2e4361;
+  border-color: #2e4361;
+  text-decoration: none;
+}
+.btn-primary:disabled {
+  background: var(--border);
+  border-color: var(--border);
+  color: var(--text);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--accent-bg);
+  text-decoration: none;
+}
+.btn-secondary:disabled {
+  color: var(--text);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background: #c44;
+  color: #fff;
+  border-color: #c44;
+}
+.btn-danger:hover:not(:disabled) {
+  background: #a33;
+  border-color: #a33;
+  text-decoration: none;
+}
+.btn-danger:disabled {
+  background: #d99;
+  border-color: #d99;
+  cursor: not-allowed;
+}

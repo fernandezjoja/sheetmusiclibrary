@@ -6,18 +6,22 @@
   fill: var(--voice-highlight-color, currentColor);
 }
 
-/* OSMD renders at a fixed "desktop reference" width so the layout (measures
-   per system, etc.) is identical regardless of viewport. The outer wrapper
-   masks any overflow on narrower screens; a JS-managed transform on
-   .score-inner scales it down to fit. transform-origin is top-left so the
-   scaled content stays anchored where you'd expect. */
+/* OSMD reads container.offsetWidth to determine page width during layout.
+   Pinning .score-inner to a wide fixed width gives OSMD a deterministic
+   canvas — identical layout on every viewport, no reflow. Authored
+   `<print new-system>` breaks from MusicXML are honored; OSMD only inserts
+   its own breaks if an authored system would exceed this width (in which
+   case bump it). The outer wrapper masks overflow on narrower screens; a
+   JS-managed transform on .score-inner shrinks the whole rendered SVG to
+   fit. transform-origin is top-left so the scaled content stays anchored
+   where you'd expect. */
 .score-outer {
   width: 100%;
   overflow: hidden;
 }
 
 .score-inner {
-  width: 960px;
+  width: 1200px;
   background: #fff;
   color: #000;
   padding: 16px;

@@ -7,6 +7,9 @@ import { AuthProvider, RequireAuth } from './auth.tsx'
 import Home from './pages/Home.tsx'
 import Learn from './pages/Learn.tsx'
 import LoginPage from './pages/LoginPage.tsx'
+import BibliotecaHub from './pages/BibliotecaHub.tsx'
+import Octoechos from './pages/Octoechos.tsx'
+import GrandesFiestas from './pages/GrandesFiestas.tsx'
 import ScoresList from './pages/ScoresList.tsx'
 import ScoreDetail from './pages/ScoreDetail.tsx'
 import AdminHub from './pages/AdminHub.tsx'
@@ -22,7 +25,10 @@ createRoot(document.getElementById('root')!).render(
             <Route index element={<Home />} />
             <Route path="learn" element={<Learn />} />
             <Route path="login" element={<LoginPage />} />
-            <Route path="biblioteca" element={<ScoresList />} />
+            <Route path="biblioteca" element={<BibliotecaHub />} />
+            <Route path="biblioteca/octoechos" element={<Octoechos />} />
+            <Route path="biblioteca/grandesfiestas" element={<GrandesFiestas />} />
+            <Route path="biblioteca/todo" element={<ScoresList />} />
             <Route path="scores/:id" element={<ScoreDetail />} />
             <Route
               path="admin"

@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <article>
       <p>
-        <Link to="/biblioteca">→ Browse the library</Link>
+        <Link to="/biblioteca">→ Ir a la biblioteca</Link>
       </p>
     </article>
   )

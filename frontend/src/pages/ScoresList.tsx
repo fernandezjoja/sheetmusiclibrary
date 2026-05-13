@@ -15,9 +15,9 @@ export default function ScoresList() {
     api.listScores().then(setScores).catch((e: Error) => setError(e.message))
   }, [])
 
-  if (error) return <p role="alert">Error loading scores: {error}</p>
-  if (!scores) return <p>Loading…</p>
-  if (scores.length === 0) return <p>No scores yet.</p>
+  if (error) return <p role="alert">Error al cargar las partituras: {error}</p>
+  if (!scores) return <p>Cargando…</p>
+  if (scores.length === 0) return <p>No hay partituras todavía.</p>
 
   return (
     <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -57,7 +57,7 @@ export default function ScoresList() {
                       color: '#8a5a00',
                       verticalAlign: 'middle',
                     }}
-                    title="Test version — visible only to signed-in users"
+                    title="Versión de prueba — visible solo para usuarios autenticados"
                   >
                     TEST
                   </span>

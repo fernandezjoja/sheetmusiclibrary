@@ -4,10 +4,10 @@ export default function Learn() {
   return (
     <article>
       <p style={{ color: 'var(--text)', fontStyle: 'italic' }}>
-        Coming soon.
+        Próximamente.
       </p>
       <p>
-        <Link to="/">← Home</Link>
+        <Link to="/">← Inicio</Link>
       </p>
     </article>
   )

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, type Score } from '../api'
+import { useAuth } from '../auth'
 import ScorePlayer from '../components/ScorePlayer'
 import YouTubeEmbed from '../components/YouTubeEmbed'
 
 export default function ScoreDetail() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useAuth()
   const [score, setScore] = useState<Score | null>(null)
   const [error, setError] = useState<{ message: string; status?: number } | null>(null)
 
@@ -24,16 +26,16 @@ export default function ScoreDetail() {
   if (error) {
     return (
       <div>
-        <p role="alert">{error.status === 404 ? 'Score not found.' : `Error: ${error.message}`}</p>
-        <Link to="/biblioteca">← Back to all scores</Link>
+        <p role="alert">{error.status === 404 ? 'Partitura no encontrada.' : `Error: ${error.message}`}</p>
+        <Link to="/biblioteca/todo">← Volver a la biblioteca</Link>
       </div>
     )
   }
-  if (!score) return <p>Loading…</p>
+  if (!score) return <p>Cargando…</p>
 
   return (
     <article>
-      <h2 style={{ marginBottom: 4 }}>
+      <h2 style={{ marginBottom: 4, textAlign: 'center' }}>
         {score.title}
         {!score.published && (
           <span
@@ -47,7 +49,7 @@ export default function ScoreDetail() {
               color: '#8a5a00',
               verticalAlign: 'middle',
             }}
-            title="Test version — visible only to signed-in users"
+            title="Versión de prueba — visible solo para usuarios autenticados"
           >
             TEST
           </span>
@@ -55,24 +57,90 @@ export default function ScoreDetail() {
       </h2>
       {score.composer && <p style={{ marginTop: 0, color: 'var(--text)' }}>{score.composer}</p>}
 
-      <div style={{ display: 'flex', gap: 12, margin: '16px 0' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 8,
+          margin: '16px 0',
+          alignItems: 'center',
+        }}
+      >
         {score.pdfPath && (
-          <a href={api.pdfUrl(score.id)} target="_blank" rel="noreferrer">
-            Download PDF
+          <a
+            href={api.pdfUrl(score.id)}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-secondary"
+          >
+            Descargar PDF
           </a>
         )}
         {score.hasMscz && (
-          <a href={api.msczUrl(score.id)} target="_blank" rel="noreferrer">
-            Download .mscz
+          <a
+            href={api.msczUrl(score.id)}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-secondary"
+          >
+            Descargar .mscz
           </a>
+        )}
+        {user?.role === 'ADMIN' && (
+          <Link
+            to={`/admin/edit/${score.id}`}
+            className="btn-secondary"
+            style={{ marginLeft: 'auto' }}
+          >
+            Editar
+          </Link>
         )}
       </div>
 
       {score.musicxmlPath ? (
-        <ScorePlayer url={api.musicxmlUrl(score.id)} />
+        <>
+          <aside
+            role="note"
+            style={{
+              margin: '0 0 16px',
+              padding: '12px 16px',
+              background: '#fff8e6',
+              border: '1px solid #f5e6c8',
+              borderLeft: '4px solid #d8a93b',
+              borderRadius: 4,
+              color: '#5c4a1a',
+              fontSize: '0.9rem',
+            }}
+          >
+            <strong style={{ display: 'block', marginBottom: 6 }}>
+              Sobre el reproductor
+            </strong>
+            <ul style={{ margin: 0, paddingLeft: 20 }}>
+              <li style={{ marginBottom: 4 }}>
+                El motor de reproducción interpreta cada nota tal como se
+                muestra en la partitura. Cuando varios versos se cantan
+                secuencialmente sobre una misma nota durante un tramo largo,
+                ese tramo suena como una única nota sostenida — no como las
+                sílabas individuales.
+              </li>
+              <li style={{ marginBottom: 4 }}>
+                El reproductor da una <em>idea general</em> de cómo debería
+                sonar la música. Los tiempos exactos pueden variar respecto a
+                la interpretación real de un coro — consulta las{' '}
+                <strong>grabaciones</strong> más abajo para una referencia más
+                fiel.
+              </li>
+              <li>
+                El comportamiento puede variar según el navegador. Disculpa
+                cualquier irregularidad — es una versión temprana.
+              </li>
+            </ul>
+          </aside>
+          <ScorePlayer url={api.musicxmlUrl(score.id)} />
+        </>
       ) : (
         <p style={{ fontStyle: 'italic', color: 'var(--text)' }}>
-          No MusicXML attached to this score.
+          Esta partitura no tiene MusicXML adjunto.
         </p>
       )}
 
@@ -83,7 +151,7 @@ export default function ScoreDetail() {
             {score.recordings.map((rec) => (
               <li key={rec.id} style={{ marginBottom: 20 }}>
                 <div style={{ marginBottom: 6 }}>
-                  <strong>{rec.label || rec.originalFilename || 'Recording'}</strong>
+                  <strong>{rec.label || rec.originalFilename || 'Grabación'}</strong>
                 </div>
                 <audio
                   controls
@@ -154,7 +222,7 @@ export default function ScoreDetail() {
       )}
 
       <p style={{ marginTop: 24 }}>
-        <Link to="/biblioteca">← Back to all scores</Link>
+        <Link to="/biblioteca/todo">← Volver a la biblioteca</Link>
       </p>
     </article>
   )

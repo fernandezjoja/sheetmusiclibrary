@@ -57,7 +57,7 @@ export default function LoginPage() {
 
   return (
     <article style={{ maxWidth: 360 }}>
-      <h2>Sign in</h2>
+      <h2>Iniciar sesión</h2>
 
       {error && (
         <div
@@ -75,7 +75,7 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit}>
         <div style={fieldStyle}>
-          <label htmlFor="username">Username</label>
+          <label htmlFor="username">Usuario</label>
           <input
             id="username"
             type="text"
@@ -89,7 +89,7 @@ export default function LoginPage() {
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">Contraseña</label>
           <input
             id="password"
             type="password"
@@ -101,13 +101,18 @@ export default function LoginPage() {
           />
         </div>
 
-        <button type="submit" disabled={!canSubmit} style={{ marginTop: 8 }}>
-          {submitting ? 'Signing in…' : 'Sign in'}
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="btn-primary"
+          style={{ marginTop: 8 }}
+        >
+          {submitting ? 'Iniciando sesión…' : 'Iniciar sesión'}
         </button>
       </form>
 
       <p style={{ marginTop: 24 }}>
-        <Link to="/">← Back to home</Link>
+        <Link to="/">← Volver al inicio</Link>
       </p>
     </article>
   )

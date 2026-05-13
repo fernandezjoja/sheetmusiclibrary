@@ -114,7 +114,7 @@ export default function AdminUpload() {
 
   return (
     <article>
-      <h2>Upload a score</h2>
+      <h2>Subir una partitura</h2>
 
       {result && (
         <div
@@ -127,10 +127,10 @@ export default function AdminUpload() {
             background: 'var(--code-bg)',
           }}
         >
-          ✓ Uploaded <strong>{result.title}</strong>{' '}
-          {result.composer ? `by ${result.composer}` : ''}{' '}
-          {result.published ? '(published)' : '(test — admins only)'} —{' '}
-          <Link to={`/scores/${result.id}`}>open it</Link>.
+          ✓ Subida <strong>{result.title}</strong>{' '}
+          {result.composer ? `por ${result.composer}` : ''}{' '}
+          {result.published ? '(publicada)' : '(prueba — solo admins)'} —{' '}
+          <Link to={`/scores/${result.id}`}>abrir</Link>.
         </div>
       )}
 
@@ -157,7 +157,7 @@ export default function AdminUpload() {
 
       <form onSubmit={handleSubmit} style={{ maxWidth: 560 }}>
         <div style={fieldStyle}>
-          <label htmlFor="title">Title *</label>
+          <label htmlFor="title">Título *</label>
           <input
             id="title"
             type="text"
@@ -169,7 +169,7 @@ export default function AdminUpload() {
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="composer">Composer</label>
+          <label htmlFor="composer">Compositor</label>
           <input
             id="composer"
             type="text"
@@ -181,7 +181,7 @@ export default function AdminUpload() {
 
         <div style={fieldStyle}>
           <label htmlFor="tags">
-            Tags <span style={{ color: 'var(--text)' }}>(comma-separated)</span>
+            Etiquetas <span style={{ color: 'var(--text)' }}>(separadas por coma)</span>
           </label>
           <input
             id="tags"
@@ -193,7 +193,7 @@ export default function AdminUpload() {
           />
           {tags.length > 0 && (
             <small style={{ color: 'var(--text)' }}>
-              Will be saved as: {tags.map((t) => `#${t}`).join(' ')}
+              Se guardarán como: {tags.map((t) => `#${t}`).join(' ')}
             </small>
           )}
           <TagReference
@@ -234,8 +234,8 @@ export default function AdminUpload() {
 
         <div style={fieldStyle}>
           <label htmlFor="mscz">
-            MuseScore archive{' '}
-            <span style={{ color: 'var(--text)' }}>(.mscz, optional)</span>
+            Archivo de MuseScore{' '}
+            <span style={{ color: 'var(--text)' }}>(.mscz, opcional)</span>
           </label>
           <input
             id="mscz"
@@ -272,7 +272,7 @@ export default function AdminUpload() {
             marginBottom: 16,
           }}
         >
-          <legend>Visibility</legend>
+          <legend>Visibilidad</legend>
           <label
             style={{
               display: 'flex',
@@ -287,19 +287,24 @@ export default function AdminUpload() {
               onChange={(e) => setPublished(e.target.checked)}
             />
             <span>
-              <strong>Publish immediately</strong>
+              <strong>Publicar de inmediato</strong>
               <br />
               <small style={{ color: 'var(--text)' }}>
-                When unchecked, the score is saved as a <em>test</em> version,
-                visible only to signed-in users. You can flip it to published
-                later from the edit page.
+                Si está desmarcada, la partitura se guarda como versión de{' '}
+                <em>prueba</em>, visible solo para usuarios autenticados.
+                Puedes publicarla más tarde desde la página de edición.
               </small>
             </span>
           </label>
         </fieldset>
 
-        <button type="submit" disabled={!canSubmit} style={{ marginTop: 8 }}>
-          {submitting ? 'Uploading…' : 'Upload'}
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="btn-primary"
+          style={{ marginTop: 8 }}
+        >
+          {submitting ? 'Subiendo…' : 'Subir'}
         </button>
       </form>
     </article>
