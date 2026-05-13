@@ -366,6 +366,14 @@ export default function ScorePlayer({ url }: Props) {
   // undo the audio player's automatic cursor advance (which would put cursor
   // on the note *after* the one we landed on).
   const undoFirstAdvanceRef = useRef(false)
+
+  // Tracks the most recent user-initiated seek target (from rewind, fast-
+  // forward, progress-bar click, or click-to-jump). When the user taps rewind
+  // again within SEEK_CHAIN_WINDOW_MS, the next rewind chains off this value
+  // instead of the engine's live step — which keeps advancing if playback is
+  // active and would otherwise cause repeated rewinds to land on the same
+  // measure-start over and over.
+  const lastUserSeekRef = useRef<{ step: number; at: number } | null>(null)
   // Pre-computed (step → notes-to-highlight) map, plus the highlights that
   // are currently painted (so we can clear them on the next iteration / on
   // stop / when a voice is muted).
@@ -772,6 +780,10 @@ export default function ScorePlayer({ url }: Props) {
     if (target > 0) engine.jumpToStep(0)
     engine.jumpToStep(target)
     setCurrentStep(target)
+    // Record the user-intended position so rapid follow-up rewind / forward
+    // taps chain off it instead of off the live (and possibly already-
+    // advanced) engine step. Playback's own cursor advances don't write here.
+    lastUserSeekRef.current = { step: target, at: Date.now() }
 
     // jumpToStep deliberately sets the scheduler one step ahead of the cursor
     // (so a normal "resume from here" plays the next note). We want the
@@ -832,19 +844,46 @@ export default function ScorePlayer({ url }: Props) {
    * Conventional audio-player rewind: if mid-measure, snap to its start;
    * if already exactly at the start of a measure, jump to the previous one.
    * No-op at step 0 (no measure to fall back to).
+   *
+   * Anchors off the most recent user-seek if it's recent enough — otherwise
+   * off the engine's live step. The chaining matters during *playback*: if
+   * the user is playing in measure 5 and rapidly taps rewind three times,
+   * each tap should walk back one measure (mid-5 → 5-start → 4-start →
+   * 3-start). Without anchoring, playback keeps advancing the engine past
+   * each rewind target between taps and the user ends up bouncing on the
+   * same measure-start.
    */
+  const SEEK_CHAIN_WINDOW_MS = 1000
+
+  const seekChainBase = (liveStep: number): number => {
+    const recent = lastUserSeekRef.current
+    if (recent && Date.now() - recent.at < SEEK_CHAIN_WINDOW_MS) {
+      return recent.step
+    }
+    return liveStep
+  }
+
   const handleFastBackward = () => {
     const starts = measureStartsRef.current
-    if (starts.length === 0 || currentStep === 0) return
-    const idx = measureIndexAt(currentStep)
-    const target = currentStep === starts[idx] && idx > 0 ? starts[idx - 1] : starts[idx]
+    if (starts.length === 0) return
+    const engine = engineRef.current
+    if (!engine) return
+    const liveStep = (engine as unknown as EngineInternals).currentIterationStep
+    const base = seekChainBase(liveStep)
+    if (base === 0) return
+    const idx = measureIndexAt(base)
+    const target = base === starts[idx] && idx > 0 ? starts[idx - 1] : starts[idx]
     seekToStep(target, 'center')
   }
 
   const handleFastForward = () => {
     const starts = measureStartsRef.current
     if (starts.length === 0) return
-    const next = starts[measureIndexAt(currentStep) + 1]
+    const engine = engineRef.current
+    if (!engine) return
+    const liveStep = (engine as unknown as EngineInternals).currentIterationStep
+    const base = seekChainBase(liveStep)
+    const next = starts[measureIndexAt(base) + 1]
     if (next !== undefined) seekToStep(next, 'center')
   }
 
