@@ -8,83 +8,99 @@ type Section = {
   note?: string
 }
 
+/**
+ * Values shown to the admin while uploading. Tracks the conventions actually
+ * used in the DB (Spanish ASCII keys, with the few legacy English ones still
+ * present like `liturgy-type:chrysostom` and `context:ascension`) plus
+ * reasonable extensions for tag values you'll likely add soon.
+ *
+ * To audit what's actually in the DB:
+ *   SELECT split_part(tag, ':', 1) AS namespace, tag, COUNT(*)
+ *   FROM (SELECT unnest(tags) AS tag FROM scores) t
+ *   GROUP BY tag ORDER BY namespace, tag;
+ */
 const REQUIRED_SECTIONS: Section[] = [
   {
-    title: 'service: (always required)',
+    title: 'service: (siempre requerido)',
     tags: [
-      'service:liturgy',
-      'service:vespers',
-      'service:matins',
-      'service:compline',
-      'service:hours',
+      'service:divina-liturgia',
+      'service:visperas',
+      'service:maitines',
+      'service:completas',
+      'service:horas',
       'service:funeral',
       'service:panikhida',
       'service:moleben',
-      'service:akathist',
-      'service:wedding',
-      'service:baptism',
-      'service:unction',
-      'service:troparion',
-      'service:kontakion',
-      'service:theotokos-hymn',
+      'service:acatista',
+      'service:boda',
+      'service:bautismo',
+      'service:uncion',
+      'service:tropario',
+      'service:contaquio',
+      'service:himno-theotokos',
     ],
-    note: 'Multiple OK — e.g. service:funeral + service:panikhida',
+    note: 'Se pueden agregar varios — p.ej. service:funeral + service:panikhida',
   },
   {
-    title: 'language: (always required)',
+    title: 'language: (siempre requerido)',
     tags: [
-      'language:english',
-      'language:slavonic',
-      'language:greek',
-      'language:spanish',
-      'language:romanian',
-      'language:serbian',
+      'language:espanol',
+      'language:ingles',
+      'language:eslavo',
+      'language:griego',
+      'language:rumano',
+      'language:serbio',
     ],
   },
   {
-    title: 'voicing: (always required)',
+    title: 'voicing: (siempre requerido)',
     tags: [
       'voicing:satb',
       'voicing:sab',
       'voicing:ttbb',
       'voicing:ssaa',
-      'voicing:unison',
-      'voicing:two-part',
+      'voicing:al-unisono',
+      'voicing:dos-voces',
     ],
   },
 ]
 
 const APPLICABLE_SECTIONS: Section[] = [
   {
-    title: 'slot: (when piece has a fixed liturgical role)',
+    title: 'slot: (cuando la pieza tiene un rol litúrgico fijo)',
     tags: [
-      'slot:first-antiphon',
-      'slot:second-antiphon',
-      'slot:beatitudes',
-      'slot:come-let-us-worship',
-      'slot:trisagion',
-      'slot:cherubic-hymn',
-      'slot:hymn-of-victory',
-      'slot:we-hymn-thee',
-      'slot:theotokos-hymn',
-      'slot:our-father',
-      'slot:communion-verse',
-      'slot:psalm-103',
-      'slot:psalm-140',
-      'slot:blessed-is-the-man',
-      'slot:gladsome-light',
-      'slot:canon-ode-1',
-      'slot:canon-ode-3',
-      'slot:canon-ode-4',
-      'slot:canon-ode-5',
-      'slot:canon-ode-6',
-      'slot:canon-ode-7',
-      'slot:canon-ode-8',
-      'slot:canon-ode-9',
+      // Divina Liturgia
+      'slot:primera-antifona',
+      'slot:segunda-antifona',
+      'slot:tercera-antifona',
+      'slot:bienaventuranzas',
+      'slot:pequena-entrada',
+      'slot:venid-adoremos',
+      'slot:trisagio',
+      'slot:proquimeno',
+      'slot:aleluya',
+      'slot:himno-querubico',
+      'slot:credo',
+      'slot:himno-victoria',
+      'slot:te-cantamos',
+      'slot:himno-theotokos',
+      'slot:padre-nuestro',
+      'slot:uno-es-santo',
+      'slot:verso-comunion',
+      'slot:hemos-visto',
+      // Vísperas / Maitines
+      'slot:salmo-103',
+      'slot:salmo-140',
+      'slot:dogmatico',
+      'slot:luz-gozosa',
+      'slot:ahora-despides',
+      'slot:apolitikios',
+      // Canon (Maitines, Panikhida, Funeral)
+      'slot:canon',
     ],
   },
   {
-    title: 'order: (when slot is set)',
+    title: 'order: (cuando se define slot)',
     tags: [
       'order:010',
       'order:020',
@@ -102,29 +118,43 @@ const APPLICABLE_SECTIONS: Section[] = [
       'order:140',
       'order:150',
     ],
-    note: '3-digit, multiples of 10 (so you can insert later)',
+    note:
+      '3 dígitos, múltiplos de 10 (deja hueco para insertar más adelante — p.ej. order:063 entre 060 y 070).',
   },
   {
-    title: 'context: (when slot is set)',
+    title: 'context: (cuando se define slot, o para pieza de fiesta/feast)',
     tags: [
       'context:default',
-      'context:pascha',
-      'context:pentecost',
-      'context:lent',
-      'context:nativity',
-      'context:theophany',
-      'context:lazarus-saturday',
-      'context:holy-saturday',
-      'context:basil-liturgy',
+      'context:natividad-theotokos',
+      'context:exaltacion-cruz',
+      'context:presentacion-theotokos',
+      'context:natividad-senor',
+      'context:teofania',
+      'context:encuentro-senor',
+      'context:anunciacion',
+      'context:domingo-de-ramos',
+      'context:ascension',
+      'context:pentecostes',
+      'context:transfiguracion',
+      'context:dormicion',
+      'context:pascua',
+      'context:cuaresma',
+      'context:liturgia-basilio',
+      'context:sabado-lazaro',
+      'context:sabado-santo',
     ],
-    note: 'Multiple OK — for pieces used on several feasts',
+    note: 'Se pueden agregar varios — para piezas usadas en varias fiestas.',
   },
   {
-    title: 'liturgy-type: (when service:liturgy)',
-    tags: ['liturgy-type:chrysostom', 'liturgy-type:basil', 'liturgy-type:presanctified'],
+    title: 'liturgy-type: (cuando service:divina-liturgia)',
+    tags: [
+      'liturgy-type:san-juan-crisostomo',
+      'liturgy-type:san-basilio',
+      'liturgy-type:dones-presantificados',
+    ],
   },
   {
-    title: 'tone: (when piece has a tone, cyclic or fixed)',
+    title: 'tone: (cuando la pieza tiene tono, cíclico o fijo)',
     tags: [
       'tone:1',
       'tone:2',
@@ -137,22 +167,31 @@ const APPLICABLE_SECTIONS: Section[] = [
     ],
   },
   {
-    title: 'chant: (specific chant style, when known)',
+    title: 'cycle: (para piezas del ciclo dominical / temporal)',
+    tags: [
+      'cycle:octoechos',
+      'cycle:menaion',
+      'cycle:triodion',
+      'cycle:pentecostarion',
+    ],
+  },
+  {
+    title: 'chant: (estilo específico, cuando se conoce)',
     tags: [
       'chant:obikhod',
       'chant:kievan',
-      'chant:znamenny-lesser',
-      'chant:znamenny-greater',
+      'chant:znamenny-menor',
+      'chant:znamenny-mayor',
       'chant:optina',
       'chant:valaam',
       'chant:alaska',
-      'chant:carpatho-russian',
-      'chant:bulgarian',
-      'chant:greek',
-      'chant:galician',
+      'chant:carpato-ruso',
+      'chant:bulgaro',
+      'chant:griego',
+      'chant:galiciano',
       'chant:pochaev',
-      'chant:byzantine',
-      'chant:psaltic',
+      'chant:bizantino',
+      'chant:psaltico',
     ],
   },
 ]
@@ -195,7 +234,7 @@ function SectionGroup({
             type="button"
             onClick={() => onAdd(t)}
             style={chipStyle}
-            title={`Add ${t}`}
+            title={`Añadir ${t}`}
           >
             {t}
           </button>
@@ -218,15 +257,15 @@ export default function TagReference({ onAdd }: Props) {
       }}
     >
       <summary style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
-        Tag reference{' '}
+        Etiquetas sugeridas{' '}
         <span style={{ color: 'var(--text)', fontWeight: 'normal' }}>
-          (click any tag to add it)
+          (haz clic en una etiqueta para agregarla)
         </span>
       </summary>
       <div style={{ marginTop: 12 }}>
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: 8 }}>
-            Required for every upload:
+            Requerido en cada subida:
           </div>
           {REQUIRED_SECTIONS.map((s) => (
             <SectionGroup key={s.title} section={s} onAdd={onAdd} />
@@ -234,14 +273,15 @@ export default function TagReference({ onAdd }: Props) {
         </div>
         <div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: 8 }}>
-            Include when applicable:
+            Incluir cuando aplique:
           </div>
           {APPLICABLE_SECTIONS.map((s) => (
             <SectionGroup key={s.title} section={s} onAdd={onAdd} />
           ))}
         </div>
         <div style={{ ...noteStyle, marginTop: 12, fontStyle: 'normal' }}>
-          Full reference + worked examples in <code>TAGS_REF.md</code> at the repo root.
+          Referencia completa con ejemplos detallados en{' '}
+          <code>TAGS_REF.md</code> (raíz del repositorio).
         </div>
       </div>
     </details>

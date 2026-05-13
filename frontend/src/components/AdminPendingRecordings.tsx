@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useRef, useState } from 'react'
 import type { CreateRecordingDraft } from '../api'
 
 type Props = {
@@ -29,8 +29,7 @@ export default function AdminPendingRecordings({ pending, onAdd, onRemove, disab
   const [notesRaw, setNotesRaw] = useState('')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const handleAdd = (e: FormEvent) => {
-    e.preventDefault()
+  const handleAdd = () => {
     if (!file) return
     const notes = notesRaw
       .split('\n')
@@ -117,8 +116,11 @@ export default function AdminPendingRecordings({ pending, onAdd, onRemove, disab
         </ul>
       )}
 
-      <form
-        onSubmit={handleAdd}
+      {/* Plain div (not <form>) because this component lives inside the outer
+          AdminUpload <form>. A nested <form> is invalid HTML and the browser
+          flattens it, which means clicking this "Agregar" button would actually
+          submit the parent upload form. */}
+      <div
         style={{
           border: '1px dashed var(--border)',
           borderRadius: 4,
@@ -151,14 +153,15 @@ export default function AdminPendingRecordings({ pending, onAdd, onRemove, disab
             style={{ ...inputStyle, resize: 'vertical' }}
           />
           <button
-            type="submit"
+            type="button"
+            onClick={handleAdd}
             disabled={!file || disabled}
             style={{ alignSelf: 'flex-start', marginTop: 4 }}
           >
             Agregar a la lista
           </button>
         </div>
-      </form>
+      </div>
     </section>
   )
 }

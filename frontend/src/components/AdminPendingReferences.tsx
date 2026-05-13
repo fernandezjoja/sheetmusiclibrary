@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import type { CreateReferenceDraft } from '../api'
 
 type Props = {
@@ -30,8 +30,7 @@ export default function AdminPendingReferences({ pending, onAdd, onRemove, disab
   const [label, setLabel] = useState('')
   const [notesRaw, setNotesRaw] = useState('')
 
-  const handleAdd = (e: FormEvent) => {
-    e.preventDefault()
+  const handleAdd = () => {
     const trimmedUrl = url.trim()
     if (!trimmedUrl) return
     const notes = notesRaw
@@ -124,8 +123,11 @@ export default function AdminPendingReferences({ pending, onAdd, onRemove, disab
         </ul>
       )}
 
-      <form
-        onSubmit={handleAdd}
+      {/* Plain div (not <form>) because this component lives inside the outer
+          AdminUpload <form>. A nested <form> is invalid HTML and the browser
+          flattens it, which means clicking "Agregar" here would actually
+          submit the parent upload form. */}
+      <div
         style={{
           border: '1px dashed var(--border)',
           borderRadius: 4,
@@ -164,14 +166,15 @@ export default function AdminPendingReferences({ pending, onAdd, onRemove, disab
             </small>
           )}
           <button
-            type="submit"
+            type="button"
+            onClick={handleAdd}
             disabled={!url.trim() || disabled}
             style={{ alignSelf: 'flex-start', marginTop: 4 }}
           >
             Agregar a la lista
           </button>
         </div>
-      </form>
+      </div>
     </section>
   )
 }
