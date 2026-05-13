@@ -36,7 +36,10 @@ export default function ScoreDetail() {
   if (!score) return <p>Cargando…</p>
 
   return (
-    <article>
+    // Bottom padding clears the fixed playback dock (~150px tall) so the
+    // page's last elements — recordings, references, back link — can scroll
+    // out from underneath it instead of being permanently obscured.
+    <article style={{ paddingBottom: 220 }}>
       <h2 style={{ marginBottom: 4, textAlign: 'center' }}>
         {score.title}
         {!score.published && (
