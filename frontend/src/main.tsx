@@ -1,10 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider, RequireAuth } from './auth.tsx'
-import Home from './pages/Home.tsx'
 import Learn from './pages/Learn.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import BibliotecaHub from './pages/BibliotecaHub.tsx'
@@ -23,7 +22,11 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <Routes>
           <Route path="/" element={<App />}>
-            <Route index element={<Home />} />
+            {/* `/` redirects to /biblioteca for now. `replace` keeps the
+                browser history clean — back-button skips this redirect.
+                Restore the Home page by reverting these two lines and the
+                `Home` import above. */}
+            <Route index element={<Navigate to="/biblioteca" replace />} />
             <Route path="learn" element={<Learn />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="biblioteca" element={<BibliotecaHub />} />
