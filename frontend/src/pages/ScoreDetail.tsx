@@ -11,6 +11,13 @@ export default function ScoreDetail() {
   const { user } = useAuth()
   const [score, setScore] = useState<Score | null>(null)
   const [error, setError] = useState<{ message: string; status?: number } | null>(null)
+  // Bumping `playerKey` remounts <ScorePlayer> with a fresh OSMD instance +
+  // engine. Used by:
+  //   - the pageshow.persisted listener below (iOS bfcache restore: page
+  //     came back from cache, our internal refs may point at stale DOM)
+  //   - the manual "Recargar reproductor" link beneath the player
+  const [playerKey, setPlayerKey] = useState(0)
+  const reloadPlayer = () => setPlayerKey((k) => k + 1)
   usePageTitle(score?.title)
 
   useEffect(() => {
@@ -24,6 +31,19 @@ export default function ScoreDetail() {
         setError({ message: e.message, status: e.status }),
       )
   }, [id])
+
+  // iOS Safari uses a back-forward cache that can restore this page in a
+  // half-state — DOM is back but the OSMD engine's references may point at
+  // pre-cache nodes. `pageshow.persisted === true` is the canonical signal
+  // that the page came from cache rather than a fresh load; force a remount
+  // of the player when that happens.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) reloadPlayer()
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
 
   if (error) {
     return (
@@ -76,7 +96,7 @@ export default function ScoreDetail() {
             href={api.pdfUrl(score.id)}
             target="_blank"
             rel="noreferrer"
-            className="btn-secondary"
+            className="btn-primary"
           >
             Descargar PDF
           </a>
@@ -141,7 +161,33 @@ export default function ScoreDetail() {
               </li>
             </ul>
           </aside>
-          <ScorePlayer url={api.musicxmlUrl(score.id)} />
+          <ScorePlayer key={playerKey} url={api.musicxmlUrl(score.id)} />
+          <p
+            style={{
+              marginTop: 12,
+              fontSize: '0.85rem',
+              color: 'var(--text)',
+              textAlign: 'right',
+            }}
+          >
+            ¿El reproductor no responde?{' '}
+            <button
+              type="button"
+              onClick={reloadPlayer}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                font: 'inherit',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              Recargar
+            </button>
+            .
+          </p>
         </>
       ) : (
         <p style={{ fontStyle: 'italic', color: 'var(--text)' }}>

@@ -28,12 +28,15 @@
   border-radius: 6px;
   box-sizing: border-box;
   transform-origin: top left;
-  /* Promote the whole score to its own GPU compositing layer so mobile
-     browsers paint it upfront instead of lazily during scroll. Eliminates
-     the on-scroll paint hiccups that were stealing main-thread time from
-     the audio scheduler. Costs some texture memory (~15 MB for a tall
-     score on retina mobile) — acceptable on modern phones. */
-  will-change: transform;
+  /* Note: a `will-change: transform` hint used to live here to promote the
+     score to its own GPU compositing layer for smoother mobile scroll. It
+     was removed because the resident GPU texture (~15 MB on retina mobile)
+     was tripping iOS Safari memory-pressure eviction, which discarded the
+     score page on scroll and left the player in a stale-DOM-ref state. If
+     mobile scroll jank ever becomes a real complaint, the right escalation
+     is to set `will-change: transform` on `touchstart` and remove it on
+     `touchend` (debounced) — i.e. only promote the layer while actively
+     scrolling, not resident. */
 }
 
 /* Floating playback dock — dark surface that pops against the light page. */

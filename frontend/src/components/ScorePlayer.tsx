@@ -38,12 +38,15 @@ function readStoredPlaybackMode(): PlaybackMode {
 
 // PlaybackEngine internals exposed for click-to-play. These fields are declared
 // `private` in the .d.ts but populated and stable enough to read/write — we
-// need both: `currentIterationStep` (for progress tracking) and `scheduler`
-// (to override the scheduler's "next-to-play" index after a seek).
+// need: `currentIterationStep` (for progress tracking), `scheduler` (to
+// override the scheduler's "next-to-play" index after a seek), and `ac` (the
+// AudioContext; we resume it on visibilitychange because iOS suspends audio
+// when the page goes hidden and never auto-resumes).
 type EngineInternals = {
   iterationSteps: number
   currentIterationStep: number
   scheduler: { setIterationStep(step: number): void }
+  ac: { state: AudioContextState; resume(): Promise<void> }
 }
 
 /**
@@ -597,6 +600,27 @@ export default function ScorePlayer({ url }: Props) {
       container.innerHTML = ''
     }
   }, [url])
+
+  // iOS Safari suspends the AudioContext whenever the page goes hidden (URL
+  // bar collapse during scroll, tab switch, app backgrounded). It never
+  // auto-resumes. Without this hook the engine's play() does nothing audible
+  // and the iteration callback that drives cursor / highlights stalls.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      const engine = engineRef.current
+      if (!engine) return
+      const ac = (engine as unknown as EngineInternals).ac
+      if (ac && ac.state === 'suspended') {
+        ac.resume().catch(() => {
+          // Resume can reject if the user hasn't gestured yet — that's fine,
+          // the next play-button tap will trigger resume too.
+        })
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
 
   // Mirror voices state into a ref so the ITERATION handler reads live mute
   // state. Also drop highlights on any voice that just became muted so the
