@@ -7,7 +7,7 @@ import { usePageTitle } from '../usePageTitle'
  *
  *   - Servicios del Ciclo (signed-in only, still placeholder)
  *   - Misterios y otros servicios (signed-in only) — has the Panikhida page
- *   - Calendario Litúrgico (always visible) — Octoechos + Grandes Fiestas
+ *   - Año Litúrgico (always visible) — Octoechos + Grandes Fiestas
  *   - Todas (always visible) — escape-hatch list of every score.
  *
  * The signed-in gate is content-focus, not content-hide: anonymous visitors
@@ -51,7 +51,7 @@ export default function BibliotecaHub() {
         </>
       )}
 
-      <h3 style={groupTitleStyle}>Calendario Litúrgico</h3>
+      <h3 style={groupTitleStyle}>Año Litúrgico</h3>
 
       <Link to="/biblioteca/octoechos" className="card-link">
         <span className="card-link-body">
