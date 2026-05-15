@@ -40,7 +40,7 @@ createRoot(document.getElementById('root')!).render(
                 </RequireAuth>
               }
             />
-            <Route path="biblioteca/todo" element={<ScoresList />} />
+            <Route path="biblioteca/todas" element={<ScoresList />} />
             <Route path="scores/:id" element={<ScoreDetail />} />
             <Route
               path="admin"

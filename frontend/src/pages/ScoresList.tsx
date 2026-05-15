@@ -7,6 +7,7 @@ import {
   liturgicalRoleParts,
 } from '../tags'
 import { usePageTitle } from '../usePageTitle'
+import { compareTitlesEs } from '../sort'
 
 export default function ScoresList() {
   usePageTitle('Todas las partituras')
@@ -21,9 +22,14 @@ export default function ScoresList() {
   if (!scores) return <p>Cargando…</p>
   if (scores.length === 0) return <p>No hay partituras todavía.</p>
 
+  // Alphabetical by title. compareTitlesEs handles Spanish-locale collation
+  // plus numeric awareness for embedded Roman/Arabic numerals (so "Tono III"
+  // sorts before "Tono IV" and "Salmo 9" before "Salmo 10").
+  const sorted = [...scores].sort((a, b) => compareTitlesEs(a.title, b.title))
+
   return (
     <ul style={{ listStyle: 'none', padding: 0 }}>
-      {scores.map((s) => {
+      {sorted.map((s) => {
         const attribution = attributionParts(s)
         const liturgical = liturgicalRoleParts(s)
         const freeForm = freeFormTags(s)

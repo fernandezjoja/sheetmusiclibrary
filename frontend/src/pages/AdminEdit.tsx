@@ -146,7 +146,7 @@ export default function AdminEdit() {
     setFieldErrors([])
     try {
       await api.deleteScore(id)
-      navigate('/biblioteca/todo', { replace: true })
+      navigate('/biblioteca/todas', { replace: true })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e))
       setDeleting(false)
@@ -160,7 +160,7 @@ export default function AdminEdit() {
     return (
       <div>
         <p role="alert">Error al cargar la partitura: {loadError}</p>
-        <Link to="/biblioteca/todo">← Volver a la biblioteca</Link>
+        <Link to="/biblioteca/todas">← Volver a la biblioteca</Link>
       </div>
     )
   }

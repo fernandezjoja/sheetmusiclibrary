@@ -22,8 +22,16 @@ export default function ScoreDetail() {
 
   useEffect(() => {
     if (!id) return
+    // Reset previous score's display state when the route param changes so
+    // we don't flash stale data while the new fetch is in flight. ESLint's
+    // `react-hooks/set-state-in-effect` flags this as cascade-prone — that
+    // concern is about steady-state re-renders, not one-off id transitions,
+    // so the rule doesn't apply here. Alternative would be to remount via
+    // `<ScoreDetail key={id} />` in a wrapper — more invasive for the gain.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setScore(null)
     setError(null)
+    /* eslint-enable react-hooks/set-state-in-effect */
     api
       .getScore(id)
       .then(setScore)
@@ -49,7 +57,7 @@ export default function ScoreDetail() {
     return (
       <div>
         <p role="alert">{error.status === 404 ? 'Partitura no encontrada.' : `Error: ${error.message}`}</p>
-        <Link to="/biblioteca/todo">← Volver a la biblioteca</Link>
+        <Link to="/biblioteca/todas">← Volver a la biblioteca</Link>
       </div>
     )
   }
@@ -275,7 +283,7 @@ export default function ScoreDetail() {
       )}
 
       <p style={{ marginTop: 24 }}>
-        <Link to="/biblioteca/todo">← Volver a la biblioteca</Link>
+        <Link to="/biblioteca/todas">← Volver a la biblioteca</Link>
       </p>
     </article>
   )

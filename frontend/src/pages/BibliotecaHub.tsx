@@ -73,7 +73,7 @@ export default function BibliotecaHub() {
         <span className="card-link-arrow" aria-hidden="true">→</span>
       </Link>
 
-      <Link to="/biblioteca/todo" className="card-link" style={{ marginTop: 28 }}>
+      <Link to="/biblioteca/todas" className="card-link" style={{ marginTop: 28 }}>
         <span className="card-link-body">
           <span className="card-link-title">Todas las partituras</span>
           <span className="card-link-desc">
