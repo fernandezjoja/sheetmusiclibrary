@@ -10,6 +10,7 @@ import BibliotecaHub from './pages/BibliotecaHub.tsx'
 import Octoechos from './pages/Octoechos.tsx'
 import GrandesFiestas from './pages/GrandesFiestas.tsx'
 import Panikhida from './pages/Panikhida.tsx'
+import Matrimonio from './pages/Matrimonio.tsx'
 import ScoresList from './pages/ScoresList.tsx'
 import ScoreDetail from './pages/ScoreDetail.tsx'
 import AdminHub from './pages/AdminHub.tsx'
@@ -37,6 +38,14 @@ createRoot(document.getElementById('root')!).render(
               element={
                 <RequireAuth>
                   <Panikhida />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="biblioteca/matrimonio"
+              element={
+                <RequireAuth>
+                  <Matrimonio />
                 </RequireAuth>
               }
             />

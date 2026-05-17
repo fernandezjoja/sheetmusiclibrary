@@ -48,6 +48,16 @@ export default function BibliotecaHub() {
             </span>
             <span className="card-link-arrow" aria-hidden="true">→</span>
           </Link>
+
+          <Link to="/biblioteca/matrimonio" className="card-link">
+            <span className="card-link-body">
+              <span className="card-link-title">Matrimonio</span>
+              <span className="card-link-desc">
+                Sacramento del matrimonio.
+              </span>
+            </span>
+            <span className="card-link-arrow" aria-hidden="true">→</span>
+          </Link>
         </>
       )}
 
