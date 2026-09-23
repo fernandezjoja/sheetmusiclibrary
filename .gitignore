@@ -12,6 +12,7 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+tokens.txt
 
 # Node / Vite (frontend/)
 node_modules/

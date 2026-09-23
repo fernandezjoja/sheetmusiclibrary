@@ -18,6 +18,14 @@ spring:
     url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:sheetmusic}
     username: ${POSTGRES_USER:sheetmusic}
     password: ${POSTGRES_PASSWORD:}
+    hikari:
+      # Neon (serverless, autosuspend) doesn't need a standing pool of idle
+      # connections — minimum-idle: 0 lets the pool drop to zero between
+      # requests instead of Hikari's housekeeper continuously refilling dead
+      # connections (and re-waking suspended compute) every ~30s.
+      minimum-idle: 0
+      maximum-pool-size: 5
+      idle-timeout: 30000
 
   jpa:
     hibernate:
