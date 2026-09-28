@@ -288,17 +288,21 @@
     border-color 100ms ease;
 }
 
-/* Same convention as the "Acerca del reproductor" accordion: ▶ when closed,
-   rotated to point down when open. */
+/* Same chevron as the "Acerca del reproductor" accordion (App.css): points
+   right when closed, down when open. */
 .score-dock-settings-arrow {
   display: inline-block;
-  margin-left: 4px;
-  font-size: 0.8rem;
+  width: 7px;
+  height: 7px;
+  margin: 0 2px 1px 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
   transition: transform 150ms ease;
 }
 
 .score-dock-settings-toggle[aria-expanded='true'] .score-dock-settings-arrow {
-  transform: rotate(90deg);
+  transform: rotate(45deg);
 }
 
 .score-dock-settings-toggle:hover {

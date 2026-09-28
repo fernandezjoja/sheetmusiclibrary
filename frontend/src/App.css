@@ -87,18 +87,23 @@
   display: none;
 }
 
+/* Chevron drawn with two borders (not a text glyph, so it looks the same
+   in every font and doesn't resemble the player's ▶). Points right when
+   closed, down when open. */
 .player-notice > summary::before {
-  content: '▶';
-  display: inline-block;
-  width: 1em;
-  font-size: 1.1rem;
-  line-height: 1;
-  color: #b5872a;
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0 4px 0 2px;
+  border-right: 2.5px solid #b5872a;
+  border-bottom: 2.5px solid #b5872a;
+  transform: rotate(-45deg);
   transition: transform 150ms ease;
 }
 
 .player-notice[open] > summary::before {
-  transform: rotate(90deg);
+  transform: rotate(45deg);
 }
 
 .player-notice > summary:focus-visible {

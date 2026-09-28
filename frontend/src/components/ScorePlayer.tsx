@@ -563,9 +563,7 @@ export default function ScorePlayer({ url }: Props) {
               aria-controls="score-dock-settings"
             >
               <span aria-hidden="true">⚙</span> Ajustes{' '}
-              <span className="score-dock-settings-arrow" aria-hidden="true">
-                ▶
-              </span>
+              <span className="score-dock-settings-arrow" aria-hidden="true" />
             </button>
           </div>
 
