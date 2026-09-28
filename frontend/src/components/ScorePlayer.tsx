@@ -3,6 +3,7 @@ import { AlphaTabApi, NotationElement, PlayerMode, model, synth } from '@coderli
 import { fitTimeSignaturesToContent, hideRewrittenTimeSignatures } from './alphaTabFreeTime'
 import { hideInvisibleNotes, patchHiddenNotes } from './alphaTabHiddenNotes'
 import { layOutRecitationLyrics } from './alphaTabLyrics'
+import { applyMusicXmlLayout, findMusicXmlLayout, type MusicXmlLayout } from './alphaTabModelLayout'
 import { findPageBreaks, separatePageBreaks, setPageBreaks } from './alphaTabPageBreaks'
 import { findSlashedNotes, markSlashedNotes, patchSlashedNotes, type SlashedNote } from './alphaTabSlashedNotes'
 import { placeSlursByVoice } from './alphaTabSlurDirection'
@@ -179,6 +180,7 @@ export default function ScorePlayer({ url }: Props) {
     //   - bar numbers hidden.
     //   - staff text (MusicXML <words>, e.g. "Obikhod Tono 8 Estiquio"):
     //     14px bold italic instead of 12px italic.
+    //   - lyrics upright (12px, not italic).
     //   - core.useWorkers false: render on the main thread so the
     //     renderer patches (alphaTabFreeTime.ts, alphaTabSlurDirection.ts,
     //     alphaTabLyrics.ts, alphaTabPageBreaks.ts, alphaTabHiddenNotes.ts,
@@ -202,6 +204,7 @@ export default function ScorePlayer({ url }: Props) {
             // CSS string form: alphaTab's Font.fromJson expects a Map for the
             // object form (despite its types) and throws on a plain object.
             [NotationElement.EffectText, 'italic bold 14px Georgia, serif'],
+            [NotationElement.EffectLyrics, '12px Georgia, serif'],
           ]),
         },
       },
@@ -233,10 +236,11 @@ export default function ScorePlayer({ url }: Props) {
     })
 
     // The MusicXML is fetched here rather than through core.file so what
-    // alphaTab's importer drops (page breaks, slashed noteheads) can be read
-    // from the same bytes.
+    // alphaTab's importer drops (page breaks, slashed noteheads, MuseScore's
+    // system layout) can be read from the same bytes.
     let pageBreaks = new Set<number>()
     let slashedNotes: SlashedNote[] = []
+    let musicXmlLayout: MusicXmlLayout | null = null
     let cancelled = false
 
     api.scoreLoaded.on((score) => {
@@ -244,6 +248,7 @@ export default function ScorePlayer({ url }: Props) {
       fitTimeSignaturesToContent(score)
       hideInvisibleNotes(score)
       markSlashedNotes(score, slashedNotes)
+      applyMusicXmlLayout(api, score, musicXmlLayout)
       // scoreLoaded fires before MIDI generation, so the first MIDI already
       // uses the selected sound.
       applyProgram(score, playbackModeRef.current)
@@ -279,6 +284,7 @@ export default function ScorePlayer({ url }: Props) {
         if (cancelled) return
         pageBreaks = findPageBreaks(bytes)
         slashedNotes = findSlashedNotes(bytes)
+        musicXmlLayout = findMusicXmlLayout(bytes)
         api.load(bytes, [-1])
       } catch (e: unknown) {
         if (cancelled) return
