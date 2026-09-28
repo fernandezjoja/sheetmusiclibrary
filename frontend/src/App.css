@@ -27,6 +27,17 @@
   align-items: baseline;
 }
 
+/* On phones the logged-in nav (Biblioteca · Administración · Cerrar sesión)
+   is wider than the screen. Unwrapped, it widens the whole page, and fixed
+   elements like the player dock end up partly off-screen. */
+@media (max-width: 600px) {
+  .app-nav {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px 16px;
+  }
+}
+
 .app-nav-link {
   font-size: 0.9rem;
   color: var(--text);

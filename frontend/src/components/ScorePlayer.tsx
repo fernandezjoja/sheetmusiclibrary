@@ -1,11 +1,125 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlphaTabApi, NotationElement, PlayerMode, model, synth } from '@coderline/alphatab'
 import { fitTimeSignaturesToContent, hideRewrittenTimeSignatures } from './alphaTabFreeTime'
+import { hideInvisibleNotes, patchHiddenNotes } from './alphaTabHiddenNotes'
+import { layOutRecitationLyrics } from './alphaTabLyrics'
+import { findPageBreaks, separatePageBreaks, setPageBreaks } from './alphaTabPageBreaks'
+import { findSlashedNotes, markSlashedNotes, patchSlashedNotes, type SlashedNote } from './alphaTabSlashedNotes'
+import { placeSlursByVoice } from './alphaTabSlurDirection'
+import { listVoiceChannels, routeVoicesToChannels, type VoiceChannel } from './alphaTabVoiceChannels'
 import './ScorePlayer.css'
 
 type Props = { url: string }
 type Status = 'loading-score' | 'loading-audio' | 'ready' | 'error'
-type TrackInfo = { label: string; muted: boolean; ref: model.Track }
+type VoiceInfo = { label: string; muted: boolean; channel: number; color?: string }
+
+// 4-voice scores get SATB labels and chip colors. Closed score (2 tracks ×
+// 2 voices) and open score (4 tracks × 1 voice) both list in S, A, T, B order.
+const SATB_VOICES = [
+  { label: 'Soprano', color: '#0067c6' },
+  { label: 'Alto', color: '#d5008c' },
+  { label: 'Tenor', color: '#d62f00' },
+  { label: 'Bajo', color: '#008000' },
+] as const
+
+// Global playback sound: one General MIDI program applied to every track.
+// Both are in the bundled sonivox soundfont.
+type PlaybackMode = 'piano' | 'choir'
+const PLAYBACK_MODES: { value: PlaybackMode; label: string; program: number }[] = [
+  { value: 'piano', label: 'Instrumento', program: 71 }, // Clarinet
+  { value: 'choir', label: 'Coro', program: 52 }, // Choir Aahs
+]
+const PLAYBACK_MODE_STORAGE_KEY = 'sml.playbackMode'
+
+function readStoredPlaybackMode(): PlaybackMode {
+  try {
+    const stored = localStorage.getItem(PLAYBACK_MODE_STORAGE_KEY)
+    return PLAYBACK_MODES.some((m) => m.value === stored) ? (stored as PlaybackMode) : 'piano'
+  } catch {
+    return 'piano'
+  }
+}
+
+function applyProgram(score: model.Score, mode: PlaybackMode): void {
+  const program = PLAYBACK_MODES.find((m) => m.value === mode)?.program ?? 0
+  for (const track of score.tracks) {
+    track.playbackInfo.program = program
+    // The MusicXML importer also turns each part's <midi-program> into an
+    // instrument automation on its first beat. Its program change is emitted
+    // after the track's initial one at the same tick, so it would win.
+    for (const staff of track.staves) {
+      for (const bar of staff.bars) {
+        for (const voice of bar.voices) {
+          for (const beat of voice.beats) {
+            for (const automation of beat.automations) {
+              if (automation.type === model.AutomationType.Instrument) automation.value = program
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Width alphaTab lays the score out at: the score panel's content box on
+// desktop (960px page column minus the panel's 16px padding each side).
+// Narrower screens keep this layout (same bars per system) and draw it
+// smaller through display.scale, since alphaTab lays out at
+// container width / scale. Never scales up.
+const LAYOUT_WIDTH = 928
+// alphaTab's default page padding. It's in screen pixels and gets divided by
+// the scale during layout, so it has to shrink with the scale or the margins
+// grow on small screens and fewer bars fit per system.
+const PAGE_PADDING = 35
+
+function applyScale(display: { scale: number; padding: number[] }, width: number): void {
+  const scale = width > 0 ? Math.min(1, width / LAYOUT_WIDTH) : 1
+  display.scale = scale
+  display.padding = [PAGE_PADDING * scale, PAGE_PADDING * scale]
+}
+
+// Playback transposition range, in semitones each way.
+const MAX_TRANSPOSE = 5
+
+// Rapid rewind / forward taps chain off the previous tap's target instead of
+// the live position (which keeps advancing during playback), so repeated
+// rewinds walk back measure by measure instead of snapping to the same start.
+const SEEK_CHAIN_WINDOW_MS = 1000
+// The player reports a position slightly past the tick it was sent to (e.g.
+// 11521 after seeking to 11520), so "at a measure start" allows this much.
+const MEASURE_START_TOLERANCE_TICKS = 30
+
+/** Index of the last measure starting at or before tick (0 if none). */
+function measureIndexAt(starts: number[], tick: number): number {
+  let lo = 0
+  let hi = starts.length - 1
+  let result = 0
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1
+    if (starts[mid] <= tick) {
+      result = mid
+      lo = mid + 1
+    } else {
+      hi = mid - 1
+    }
+  }
+  return result
+}
+
+function buildVoiceInfos(channels: VoiceChannel[]): VoiceInfo[] {
+  if (channels.length === 4) {
+    return channels.map((c, i) => ({ ...SATB_VOICES[i], muted: false, channel: c.channel }))
+  }
+  return channels.map((c) => {
+    const name = c.track.name?.trim() || `Pista ${c.track.index + 1}`
+    const shared = channels.filter((o) => o.track === c.track).length > 1
+    return {
+      label: shared ? `${name} voz ${c.voiceIndex + 1}` : name,
+      muted: false,
+      channel: c.channel,
+    }
+  })
+}
 
 export default function ScorePlayer({ url }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -14,8 +128,17 @@ export default function ScorePlayer({ url }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [playing, setPlaying] = useState(false)
   const [stopped, setStopped] = useState(true)
-  const [tracks, setTracks] = useState<TrackInfo[]>([])
-  const [position, setPosition] = useState({ current: 0, end: 0 })
+  const [voices, setVoices] = useState<VoiceInfo[]>([])
+  const [position, setPosition] = useState({ current: 0, end: 0, tick: 0 })
+  // Measure start ticks in playback order (repeats included), refreshed on
+  // every MIDI (re)generation.
+  const [measureStarts, setMeasureStarts] = useState<number[]>([])
+  // Most recent user-initiated measure jump, for SEEK_CHAIN_WINDOW_MS.
+  const lastUserSeekRef = useRef<{ tick: number; at: number } | null>(null)
+  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>(readStoredPlaybackMode)
+  // Read by scoreLoaded (registered once per URL) to pick the initial program.
+  const playbackModeRef = useRef(playbackMode)
+  const [transpose, setTranspose] = useState(0)
 
   useEffect(() => {
     const container = containerRef.current
@@ -23,14 +146,16 @@ export default function ScorePlayer({ url }: Props) {
 
     setStatus('loading-score')
     setErrorMessage(null)
-    setTracks([])
+    setVoices([])
+    setTranspose(0)
     setPlaying(false)
     setStopped(true)
-    setPosition({ current: 0, end: 0 })
+    setPosition({ current: 0, end: 0, tick: 0 })
+    setMeasureStarts([])
 
     // alphaTab defaults, except:
-    //   - core.tracks 'all': by default only the first track is rendered,
-    //     which would hide the bottom staff of a closed score.
+    //   - all tracks rendered (load(…, [-1]) below): by default only the
+    //     first track is, which would hide the bottom staff of a closed score.
     //   - core.fontDirectory: alphaTab derives it from its own script URL,
     //     which in dev is Vite's pre-bundle folder (node_modules/.vite/deps/)
     //     where the font doesn't exist. Point it at the copy that
@@ -41,12 +166,35 @@ export default function ScorePlayer({ url }: Props) {
     //     40% opacity, which fades alto and bass in a closed score.
     //   - score header (title, subtitle, composer, lyricist, copyright)
     //     hidden: ScoreDetail already shows title and composer above.
+    //   - bar numbers hidden.
+    //   - staff text (MusicXML <words>, e.g. "Obikhod Tono 8 Estiquio"):
+    //     14px bold italic instead of 12px italic.
     //   - core.useWorkers false: render on the main thread so the
-    //     time-signature patch in alphaTabFreeTime.ts applies.
+    //     renderer patches (alphaTabFreeTime.ts, alphaTabSlurDirection.ts,
+    //     alphaTabLyrics.ts, alphaTabPageBreaks.ts, alphaTabHiddenNotes.ts,
+    //     alphaTabSlashedNotes.ts) apply.
     hideRewrittenTimeSignatures()
+    placeSlursByVoice()
+    layOutRecitationLyrics()
+    separatePageBreaks()
+    patchHiddenNotes()
+    patchSlashedNotes()
+    routeVoicesToChannels()
+    const display = { scale: 1, padding: [PAGE_PADDING, PAGE_PADDING] }
+    applyScale(display, container.offsetWidth)
     const api = new AlphaTabApi(container, {
-      core: { file: url, tracks: 'all', fontDirectory: '/font/', useWorkers: false },
-      display: { resources: { secondaryGlyphColor: '#000' } },
+      core: { fontDirectory: '/font/', useWorkers: false },
+      display: {
+        ...display,
+        resources: {
+          secondaryGlyphColor: '#000',
+          elementFonts: new Map([
+            // CSS string form: alphaTab's Font.fromJson expects a Map for the
+            // object form (despite its types) and throws on a plain object.
+            [NotationElement.EffectText, 'italic bold 14px Georgia, serif'],
+          ]),
+        },
+      },
       notation: {
         elements: new Map([
           [NotationElement.ScoreTitle, false],
@@ -57,6 +205,7 @@ export default function ScorePlayer({ url }: Props) {
           [NotationElement.ScoreMusic, false],
           [NotationElement.ScoreWordsAndMusic, false],
           [NotationElement.ScoreCopyright, false],
+          [NotationElement.BarNumber, false],
         ]),
       },
       player: {
@@ -66,21 +215,39 @@ export default function ScorePlayer({ url }: Props) {
     })
     apiRef.current = api
 
+    // alphaTab fires resize (with its settings) before every re-layout on a
+    // width change, e.g. phone rotation. The initial one fires inside the
+    // constructor, which is why the first scale is set in the settings above.
+    api.resize.on((e) => {
+      if (e.settings) applyScale(e.settings.display, e.newWidth)
+    })
+
+    // The MusicXML is fetched here rather than through core.file so what
+    // alphaTab's importer drops (page breaks, slashed noteheads) can be read
+    // from the same bytes.
+    let pageBreaks = new Set<number>()
+    let slashedNotes: SlashedNote[] = []
+    let cancelled = false
+
     api.scoreLoaded.on((score) => {
+      setPageBreaks(score, pageBreaks)
       fitTimeSignaturesToContent(score)
+      hideInvisibleNotes(score)
+      markSlashedNotes(score, slashedNotes)
+      // scoreLoaded fires before MIDI generation, so the first MIDI already
+      // uses the selected sound.
+      applyProgram(score, playbackModeRef.current)
       // Track names ("SA" / "TB" from the MusicXML part names) are rotated
       // vertically by default. scoreLoaded fires before rendering starts, so
       // the stylesheet change applies to the first render.
       score.stylesheet.firstSystemTrackNameOrientation = model.TrackNameOrientation.Horizontal
       score.stylesheet.otherSystemsTrackNameOrientation = model.TrackNameOrientation.Horizontal
-      setTracks(
-        score.tracks.map((t) => ({
-          label: t.name?.trim() || `Pista ${t.index + 1}`,
-          muted: false,
-          ref: t,
-        })),
-      )
+      setVoices(buildVoiceInfos(listVoiceChannels(score)))
       setStatus('loading-audio')
+    })
+    // midiLoad fires after alphaTab rebuilds its tick cache from the MIDI.
+    api.midiLoad.on(() => {
+      setMeasureStarts(api.tickCache?.masterBars.map((m) => m.start) ?? [])
     })
     api.playerReady.on(() => setStatus('ready'))
     api.playerStateChanged.on((e) => {
@@ -88,18 +255,58 @@ export default function ScorePlayer({ url }: Props) {
       setStopped(e.stopped)
     })
     api.playerPositionChanged.on((e) => {
-      setPosition({ current: e.currentTime, end: e.endTime })
+      setPosition({ current: e.currentTime, end: e.endTime, tick: e.currentTick })
     })
     api.error.on((e) => {
       setErrorMessage(e.message)
       setStatus('error')
     })
 
+    ;(async () => {
+      try {
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const bytes = new Uint8Array(await res.arrayBuffer())
+        if (cancelled) return
+        pageBreaks = findPageBreaks(bytes)
+        slashedNotes = findSlashedNotes(bytes)
+        api.load(bytes, [-1])
+      } catch (e: unknown) {
+        if (cancelled) return
+        setErrorMessage(e instanceof Error ? e.message : String(e))
+        setStatus('error')
+      }
+    })()
+
     return () => {
+      cancelled = true
       api.destroy()
       apiRef.current = null
     }
   }, [url])
+
+  // Switching sound regenerates the MIDI with the new program. alphaTab's
+  // MIDI reload stops playback and rewinds to 0, so position and play state
+  // are restored afterwards. Channel mutes live in the synth and survive it.
+  const changePlaybackMode = (mode: PlaybackMode) => {
+    setPlaybackMode(mode)
+    playbackModeRef.current = mode
+    try {
+      localStorage.setItem(PLAYBACK_MODE_STORAGE_KEY, mode)
+    } catch {
+      // Storage may be disabled (private mode); the choice just won't persist.
+    }
+    const api = apiRef.current
+    if (!api?.score) return
+    const time = api.timePosition
+    const wasPlaying = playing
+    applyProgram(api.score, mode)
+    api.loadMidiForScore()
+    // Reapply the live transposition in case the MIDI reload reset it.
+    api.changeTrackTranspositionPitch(api.score.tracks, transpose)
+    api.timePosition = time
+    if (wasPlaying) api.play()
+  }
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     const api = apiRef.current
@@ -109,14 +316,61 @@ export default function ScorePlayer({ url }: Props) {
     api.timePosition = fraction * position.end
   }
 
-  const toggleMute = (idx: number) => {
+  const seekChainBase = (liveTick: number): number => {
+    const recent = lastUserSeekRef.current
+    return recent && Date.now() - recent.at < SEEK_CHAIN_WINDOW_MS ? recent.tick : liveTick
+  }
+
+  const seekToTick = (tick: number) => {
     const api = apiRef.current
     if (!api) return
-    setTracks((prev) =>
+    api.tickPosition = tick
+    lastUserSeekRef.current = { tick, at: Date.now() }
+  }
+
+  // Conventional rewind: mid-measure snaps to its start; at a measure start,
+  // goes to the previous measure.
+  const handlePreviousMeasure = () => {
+    const api = apiRef.current
+    if (!api || measureStarts.length === 0) return
+    const base = seekChainBase(api.tickPosition)
+    const idx = measureIndexAt(measureStarts, base)
+    const atStart = base - measureStarts[idx] <= MEASURE_START_TOLERANCE_TICKS
+    seekToTick(atStart && idx > 0 ? measureStarts[idx - 1] : measureStarts[idx])
+  }
+
+  const handleNextMeasure = () => {
+    const api = apiRef.current
+    if (!api || measureStarts.length === 0) return
+    const next = measureStarts[measureIndexAt(measureStarts, seekChainBase(api.tickPosition)) + 1]
+    if (next !== undefined) seekToTick(next)
+  }
+
+  const atFirstMeasureStart = position.tick <= (measureStarts[0] ?? 0) + MEASURE_START_TOLERANCE_TICKS
+  const inLastMeasure = measureIndexAt(measureStarts, position.tick) >= measureStarts.length - 1
+
+  // Live transposition in the synth, applied to both MIDI channels of every
+  // track, so all voices move together. The score display doesn't change.
+  const changeTranspose = (delta: number) => {
+    const api = apiRef.current
+    if (!api?.score) return
+    const next = Math.max(-MAX_TRANSPOSE, Math.min(MAX_TRANSPOSE, transpose + delta))
+    if (next === transpose) return
+    api.changeTrackTranspositionPitch(api.score.tracks, next)
+    setTranspose(next)
+  }
+
+  // Each voice plays on its own MIDI channel (see alphaTabVoiceChannels.ts),
+  // so muting is per channel on the synth rather than alphaTab's per-track
+  // changeTrackMute.
+  const toggleMute = (idx: number) => {
+    const player = apiRef.current?.player
+    if (!player) return
+    setVoices((prev) =>
       prev.map((info, i) => {
         if (i !== idx) return info
         const muted = !info.muted
-        api.changeTrackMute([info.ref], muted)
+        player.setChannelMute(info.channel, muted)
         return { ...info, muted }
       }),
     )
@@ -155,6 +409,16 @@ export default function ScorePlayer({ url }: Props) {
               <button
                 type="button"
                 className="score-dock-btn"
+                onClick={handlePreviousMeasure}
+                disabled={stopped || atFirstMeasureStart}
+                aria-label="Previous measure"
+                title="Previous measure"
+              >
+                ⏮
+              </button>
+              <button
+                type="button"
+                className="score-dock-btn"
                 onClick={() => apiRef.current?.playPause()}
                 aria-label={playing ? 'Pause' : 'Play'}
                 title={playing ? 'Pause' : 'Play'}
@@ -171,12 +435,65 @@ export default function ScorePlayer({ url }: Props) {
               >
                 ⏹
               </button>
+              <button
+                type="button"
+                className="score-dock-btn"
+                onClick={handleNextMeasure}
+                disabled={stopped || inLastMeasure}
+                aria-label="Next measure"
+                title="Next measure"
+              >
+                ⏭
+              </button>
             </div>
           </div>
 
-          {tracks.length > 0 && (
-            <div className="score-dock-voices" role="group" aria-label="Tracks">
-              {tracks.map((info, i) => (
+          <div className="score-dock-row">
+            <span className="score-dock-label">Semitono:</span>
+            <div className="score-dock-segmented" role="group" aria-label="Transposición">
+              <button
+                type="button"
+                className="score-dock-segmented-btn"
+                onClick={() => changeTranspose(-1)}
+                disabled={transpose <= -MAX_TRANSPOSE}
+                aria-label="Bajar un semitono"
+                title="Bajar un semitono"
+              >
+                −
+              </button>
+              <span className="score-dock-transpose-value" aria-live="polite">
+                {transpose > 0 ? `+${transpose}` : transpose}
+              </span>
+              <button
+                type="button"
+                className="score-dock-segmented-btn"
+                onClick={() => changeTranspose(1)}
+                disabled={transpose >= MAX_TRANSPOSE}
+                aria-label="Subir un semitono"
+                title="Subir un semitono"
+              >
+                +
+              </button>
+            </div>
+
+            <div className="score-dock-segmented" role="group" aria-label="Playback sound">
+              {PLAYBACK_MODES.map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  className="score-dock-segmented-btn"
+                  onClick={() => changePlaybackMode(m.value)}
+                  aria-pressed={m.value === playbackMode}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {voices.length > 0 && (
+            <div className="score-dock-voices" role="group" aria-label="Voices">
+              {voices.map((info, i) => (
                 <button
                   key={i}
                   type="button"
@@ -184,6 +501,11 @@ export default function ScorePlayer({ url }: Props) {
                   onClick={() => toggleMute(i)}
                   aria-pressed={!info.muted}
                   aria-label={`${info.label} ${info.muted ? '(muted)' : ''}`}
+                  style={
+                    info.color
+                      ? ({ '--voice-color': info.color } as React.CSSProperties)
+                      : undefined
+                  }
                 >
                   {info.label}
                 </button>
@@ -193,7 +515,9 @@ export default function ScorePlayer({ url }: Props) {
         </div>
       )}
 
-      <div className="score-inner" ref={containerRef} />
+      <div className="score-inner">
+        <div ref={containerRef} />
+      </div>
     </div>
   )
 }
