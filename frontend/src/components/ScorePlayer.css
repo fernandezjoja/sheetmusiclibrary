@@ -1,42 +1,32 @@
-/* When applied to a VexFlow stavenote group, paint its noteheads / stem
-   in the per-voice color set via the inline `--voice-highlight-color`
-   custom property. Class-selector specificity beats VexFlow's `fill="black"`
-   presentation attribute, so no `!important` is needed. */
-.score-note-highlighted path {
-  fill: var(--voice-highlight-color, currentColor);
-}
-
-/* OSMD reads container.offsetWidth to determine page width during layout.
-   Pinning .score-inner to a wide fixed width gives OSMD a deterministic
-   canvas — identical layout on every viewport, no reflow. Authored
-   `<print new-system>` breaks from MusicXML are honored; OSMD only inserts
-   its own breaks if an authored system would exceed this width (in which
-   case bump it). The outer wrapper masks overflow on narrower screens; a
-   JS-managed transform on .score-inner shrinks the whole rendered SVG to
-   fit. transform-origin is top-left so the scaled content stays anchored
-   where you'd expect. */
-.score-outer {
-  width: 100%;
-  overflow: hidden;
-}
-
+/* White "paper" behind the alphaTab render. alphaTab lays the score out
+   against this element's width and reflows on resize. It also sets
+   position: relative on it to place the playback cursors. */
 .score-inner {
-  width: 1200px;
   background: #fff;
   color: #000;
   padding: 16px;
   border-radius: 6px;
-  box-sizing: border-box;
-  transform-origin: top left;
-  /* Note: a `will-change: transform` hint used to live here to promote the
-     score to its own GPU compositing layer for smoother mobile scroll. It
-     was removed because the resident GPU texture (~15 MB on retina mobile)
-     was tripping iOS Safari memory-pressure eviction, which discarded the
-     score page on scroll and left the player in a stale-DOM-ref state. If
-     mobile scroll jank ever becomes a real complaint, the right escalation
-     is to set `will-change: transform` on `touchstart` and remove it on
-     `touchend` (debounced) — i.e. only promote the layer while actively
-     scrolling, not resident. */
+}
+
+/* alphaTab ships no CSS for its playback cursors or highlights; these are
+   the rules from alphaTab's player guide. Without them the cursors are
+   invisible. */
+.at-cursor-bar {
+  background: rgba(255, 242, 0, 0.25);
+}
+
+.at-selection div {
+  background: rgba(64, 64, 255, 0.1);
+}
+
+.at-cursor-beat {
+  background: rgba(64, 64, 255, 0.75);
+  width: 3px;
+}
+
+.at-highlight * {
+  fill: #0078ff;
+  stroke: #0078ff;
 }
 
 /* Floating playback dock — dark surface that pops against the light page. */
@@ -132,54 +122,7 @@
   cursor: default;
 }
 
-/* Segmented control (sound mode) — Apple/Linear-style pill group */
-
-.score-dock-sound-label {
-  color: rgba(205, 210, 219, 0.6);
-  font-size: 0.8rem;
-  letter-spacing: 0.02em;
-}
-
-.score-dock-segmented {
-  display: inline-flex;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 2px;
-  gap: 2px;
-}
-
-.score-dock-segmented-btn {
-  appearance: none;
-  background: transparent;
-  border: none;
-  color: rgba(205, 210, 219, 0.85);
-  padding: 4px 10px;
-  border-radius: 6px;
-  font: inherit;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition:
-    background 100ms ease,
-    color 100ms ease;
-}
-
-.score-dock-segmented-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-}
-
-.score-dock-segmented-btn[aria-pressed='true'] {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-}
-
-.score-dock-segmented-btn:focus-visible {
-  outline: 2px solid #7aa3d3;
-  outline-offset: 2px;
-}
-
-/* Voice toggles — pill chips, filled when active, outlined when muted */
+/* Track mute toggles — pill chips, filled when active, outlined when muted */
 
 .score-dock-voices {
   display: flex;
@@ -189,8 +132,6 @@
 }
 
 .score-dock-voice {
-  /* Per-voice fill is set as a CSS custom property on the button (inline
-     style); this default catches any non-SATB chip that doesn't get one. */
   --voice-color: #7aa3d3;
 
   appearance: none;

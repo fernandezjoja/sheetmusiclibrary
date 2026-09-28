@@ -11,8 +11,8 @@ export default function ScoreDetail() {
   const { user } = useAuth()
   const [score, setScore] = useState<Score | null>(null)
   const [error, setError] = useState<{ message: string; status?: number } | null>(null)
-  // Bumping `playerKey` remounts <ScorePlayer> with a fresh OSMD instance +
-  // engine. Used by:
+  // Bumping `playerKey` remounts <ScorePlayer> with a fresh alphaTab
+  // instance. Used by:
   //   - the pageshow.persisted listener below (iOS bfcache restore: page
   //     came back from cache, our internal refs may point at stale DOM)
   //   - the manual "Recargar reproductor" link beneath the player
