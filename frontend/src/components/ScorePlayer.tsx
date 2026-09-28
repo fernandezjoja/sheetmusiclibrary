@@ -72,8 +72,17 @@ const LAYOUT_WIDTH = 928
 // grow on small screens and fewer bars fit per system.
 const PAGE_PADDING = 35
 
+// On phones the score is laid out narrower than desktop and drawn larger.
+// Lines still match desktop when the score carries MuseScore's layout
+// (alphaTabModelLayout.ts); only the bars get tighter. 840 keeps lyric
+// syllables from running into each other on the densest scores (760 made
+// some merge at a 390px screen).
+const PHONE_MAX_WIDTH = 600
+const PHONE_LAYOUT_WIDTH = 840
+
 function applyScale(display: { scale: number; padding: number[] }, width: number): void {
-  const scale = width > 0 ? Math.min(1, width / LAYOUT_WIDTH) : 1
+  const layoutWidth = width < PHONE_MAX_WIDTH ? PHONE_LAYOUT_WIDTH : LAYOUT_WIDTH
+  const scale = width > 0 ? Math.min(1, width / layoutWidth) : 1
   display.scale = scale
   display.padding = [PAGE_PADDING * scale, PAGE_PADDING * scale]
 }

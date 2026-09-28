@@ -4,6 +4,13 @@
   padding: 24px;
 }
 
+/* Phones: narrower page margins so the score gets more of the screen. */
+@media (max-width: 600px) {
+  .app {
+    padding: 16px 10px;
+  }
+}
+
 .app-header {
   display: flex;
   justify-content: space-between;

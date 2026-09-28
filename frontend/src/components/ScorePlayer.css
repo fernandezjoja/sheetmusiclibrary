@@ -8,6 +8,12 @@
   border-radius: 6px;
 }
 
+@media (max-width: 600px) {
+  .score-inner {
+    padding: 6px;
+  }
+}
+
 /* alphaTab always appends a "rendered by alphaTab" line as the last rendered
    chunk of the score, with no setting to turn it off. visibility (not
    display) keeps its space so alphaTab's lazy rendering isn't affected. */
