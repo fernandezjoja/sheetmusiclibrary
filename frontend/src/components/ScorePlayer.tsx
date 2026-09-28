@@ -26,7 +26,7 @@ const SATB_VOICES = [
 // Both are in the bundled sonivox soundfont.
 type PlaybackMode = 'piano' | 'choir'
 const PLAYBACK_MODES: { value: PlaybackMode; label: string; program: number }[] = [
-  { value: 'piano', label: 'Instrumento', program: 71 }, // Clarinet
+  { value: 'piano', label: 'Instrumental', program: 71 }, // Clarinet
   { value: 'choir', label: 'Coro', program: 52 }, // Choir Aahs
 ]
 const PLAYBACK_MODE_STORAGE_KEY = 'sml.playbackMode'
@@ -106,6 +106,14 @@ function measureIndexAt(starts: number[], tick: number): number {
   return result
 }
 
+// Holding a voice chip this long solos it instead of toggling its mute.
+const LONG_PRESS_MS = 500
+
+function formatTime(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+}
+
 function buildVoiceInfos(channels: VoiceChannel[]): VoiceInfo[] {
   if (channels.length === 4) {
     return channels.map((c, i) => ({ ...SATB_VOICES[i], muted: false, channel: c.channel }))
@@ -127,7 +135,6 @@ export default function ScorePlayer({ url }: Props) {
   const [status, setStatus] = useState<Status>('loading-score')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [playing, setPlaying] = useState(false)
-  const [stopped, setStopped] = useState(true)
   const [voices, setVoices] = useState<VoiceInfo[]>([])
   const [position, setPosition] = useState({ current: 0, end: 0, tick: 0 })
   // Measure start ticks in playback order (repeats included), refreshed on
@@ -139,6 +146,10 @@ export default function ScorePlayer({ url }: Props) {
   // Read by scoreLoaded (registered once per URL) to pick the initial program.
   const playbackModeRef = useRef(playbackMode)
   const [transpose, setTranspose] = useState(0)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  // Long-press tracking for voice chips (see LONG_PRESS_MS).
+  const longPressTimerRef = useRef<number | null>(null)
+  const longPressFiredRef = useRef(false)
 
   useEffect(() => {
     const container = containerRef.current
@@ -149,7 +160,6 @@ export default function ScorePlayer({ url }: Props) {
     setVoices([])
     setTranspose(0)
     setPlaying(false)
-    setStopped(true)
     setPosition({ current: 0, end: 0, tick: 0 })
     setMeasureStarts([])
 
@@ -252,7 +262,6 @@ export default function ScorePlayer({ url }: Props) {
     api.playerReady.on(() => setStatus('ready'))
     api.playerStateChanged.on((e) => {
       setPlaying(e.state === synth.PlayerState.Playing)
-      setStopped(e.stopped)
     })
     api.playerPositionChanged.on((e) => {
       setPosition({ current: e.currentTime, end: e.endTime, tick: e.currentTick })
@@ -363,45 +372,116 @@ export default function ScorePlayer({ url }: Props) {
   // Each voice plays on its own MIDI channel (see alphaTabVoiceChannels.ts),
   // so muting is per channel on the synth rather than alphaTab's per-track
   // changeTrackMute.
-  const toggleMute = (idx: number) => {
+  const applyMutes = (mutedFor: (info: VoiceInfo, i: number) => boolean) => {
     const player = apiRef.current?.player
     if (!player) return
     setVoices((prev) =>
       prev.map((info, i) => {
-        if (i !== idx) return info
-        const muted = !info.muted
+        const muted = mutedFor(info, i)
         player.setChannelMute(info.channel, muted)
         return { ...info, muted }
       }),
     )
   }
 
+  const toggleMute = (idx: number) => applyMutes((info, i) => (i === idx ? !info.muted : info.muted))
+
+  // Solo: hear only this voice. Soloing the voice that's already the only one
+  // audible unmutes everything again.
+  const toggleSolo = (idx: number) => {
+    const alreadySolo = voices.every((v, i) => v.muted === (i !== idx))
+    applyMutes((_, i) => (alreadySolo ? false : i !== idx))
+  }
+
+  const startLongPress = (idx: number) => {
+    longPressFiredRef.current = false
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressFiredRef.current = true
+      toggleSolo(idx)
+    }, LONG_PRESS_MS)
+  }
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current !== null) window.clearTimeout(longPressTimerRef.current)
+    longPressTimerRef.current = null
+  }
+
+  const handleVoiceClick = (idx: number) => {
+    // The click that ends a long press shouldn't also toggle the mute.
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false
+      return
+    }
+    toggleMute(idx)
+  }
+
+  // Keyboard shortcuts: space play/pause, ←/→ previous/next measure. Ignored
+  // while typing in a form field or with modifier keys held.
+  useEffect(() => {
+    if (status !== 'ready') return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName?.toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return
+      if (e.code === 'Space') {
+        e.preventDefault()
+        apiRef.current?.playPause()
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault()
+        handlePreviousMeasure()
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault()
+        handleNextMeasure()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  })
+
   const progress = position.end > 0 ? (position.current / position.end) * 100 : 0
+
+  const playButton = (
+    <button
+      type="button"
+      className="score-dock-btn score-dock-btn-primary"
+      onClick={() => apiRef.current?.playPause()}
+      aria-label={playing ? 'Pausa' : 'Reproducir'}
+      title={playing ? 'Pausa (espacio)' : 'Reproducir (espacio)'}
+    >
+      {playing ? '⏸' : '▶'}
+    </button>
+  )
 
   return (
     <div>
       {status === 'loading-score' && <p>Cargando partitura…</p>}
       {status === 'loading-audio' && <p>Cargando audio…</p>}
       {status === 'error' && (
-        <p role="alert">Failed to render score: {errorMessage}</p>
+        <p role="alert">No se pudo cargar la partitura: {errorMessage}</p>
       )}
 
       {status === 'ready' && (
         <div className="score-dock">
-          {/* Progress bar — click to seek to that time. */}
-          <div
-            className="score-dock-progress"
-            role="slider"
-            aria-label="Playback position"
-            aria-valuemin={0}
-            aria-valuemax={Math.round(position.end)}
-            aria-valuenow={Math.round(position.current)}
-            onClick={handleSeek}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="score-dock-progress-track">
-              <div className="score-dock-progress-fill" style={{ width: `${progress}%` }} />
+          {/* Progress bar with time; click to seek. */}
+          <div className="score-dock-row score-dock-progress-row">
+            <div
+              className="score-dock-progress"
+              role="slider"
+              aria-label="Posición de reproducción"
+              aria-valuemin={0}
+              aria-valuemax={Math.round(position.end)}
+              aria-valuenow={Math.round(position.current)}
+              aria-valuetext={`${formatTime(position.current)} de ${formatTime(position.end)}`}
+              onClick={handleSeek}
+            >
+              <div className="score-dock-progress-track">
+                <div className="score-dock-progress-fill" style={{ width: `${progress}%` }} />
+              </div>
             </div>
+            <span className="score-dock-time">
+              {formatTime(position.current)} / {formatTime(position.end)}
+            </span>
           </div>
 
           <div className="score-dock-row">
@@ -410,97 +490,42 @@ export default function ScorePlayer({ url }: Props) {
                 type="button"
                 className="score-dock-btn"
                 onClick={handlePreviousMeasure}
-                disabled={stopped || atFirstMeasureStart}
-                aria-label="Previous measure"
-                title="Previous measure"
+                disabled={atFirstMeasureStart}
+                aria-label="Compás anterior"
+                title="Compás anterior (←)"
               >
                 ⏮
               </button>
-              <button
-                type="button"
-                className="score-dock-btn"
-                onClick={() => apiRef.current?.playPause()}
-                aria-label={playing ? 'Pause' : 'Play'}
-                title={playing ? 'Pause' : 'Play'}
-              >
-                {playing ? '⏸' : '▶'}
-              </button>
-              <button
-                type="button"
-                className="score-dock-btn"
-                onClick={() => apiRef.current?.stop()}
-                disabled={stopped}
-                aria-label="Stop"
-                title="Stop"
-              >
-                ⏹
-              </button>
+              {playButton}
               <button
                 type="button"
                 className="score-dock-btn"
                 onClick={handleNextMeasure}
-                disabled={stopped || inLastMeasure}
-                aria-label="Next measure"
-                title="Next measure"
+                disabled={inLastMeasure}
+                aria-label="Compás siguiente"
+                title="Compás siguiente (→)"
               >
                 ⏭
               </button>
             </div>
           </div>
 
-          <div className="score-dock-row">
-            <span className="score-dock-label">Semitono:</span>
-            <div className="score-dock-segmented" role="group" aria-label="Transposición">
-              <button
-                type="button"
-                className="score-dock-segmented-btn"
-                onClick={() => changeTranspose(-1)}
-                disabled={transpose <= -MAX_TRANSPOSE}
-                aria-label="Bajar un semitono"
-                title="Bajar un semitono"
-              >
-                −
-              </button>
-              <span className="score-dock-transpose-value" aria-live="polite">
-                {transpose > 0 ? `+${transpose}` : transpose}
-              </span>
-              <button
-                type="button"
-                className="score-dock-segmented-btn"
-                onClick={() => changeTranspose(1)}
-                disabled={transpose >= MAX_TRANSPOSE}
-                aria-label="Subir un semitono"
-                title="Subir un semitono"
-              >
-                +
-              </button>
-            </div>
-
-            <div className="score-dock-segmented" role="group" aria-label="Playback sound">
-              {PLAYBACK_MODES.map((m) => (
-                <button
-                  key={m.value}
-                  type="button"
-                  className="score-dock-segmented-btn"
-                  onClick={() => changePlaybackMode(m.value)}
-                  aria-pressed={m.value === playbackMode}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {voices.length > 0 && (
-            <div className="score-dock-voices" role="group" aria-label="Voices">
+            <div className="score-dock-voices" role="group" aria-label="Voces">
               {voices.map((info, i) => (
                 <button
                   key={i}
                   type="button"
                   className="score-dock-voice"
-                  onClick={() => toggleMute(i)}
+                  onClick={() => handleVoiceClick(i)}
+                  onPointerDown={() => startLongPress(i)}
+                  onPointerUp={cancelLongPress}
+                  onPointerLeave={cancelLongPress}
+                  onPointerCancel={cancelLongPress}
+                  onContextMenu={(e) => e.preventDefault()}
                   aria-pressed={!info.muted}
-                  aria-label={`${info.label} ${info.muted ? '(muted)' : ''}`}
+                  aria-label={`${info.label}${info.muted ? ' (silenciada)' : ''}`}
+                  title="Toca para silenciar; mantén pulsado para escuchar solo esta voz"
                   style={
                     info.color
                       ? ({ '--voice-color': info.color } as React.CSSProperties)
@@ -510,6 +535,66 @@ export default function ScorePlayer({ url }: Props) {
                   {info.label}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Icon plus text label, in its own row right above the panel it
+              opens: clearer than a bare gear icon for less technical users. */}
+          <div className="score-dock-row">
+            <button
+              type="button"
+              className="score-dock-settings-toggle"
+              onClick={() => setSettingsOpen((o) => !o)}
+              aria-expanded={settingsOpen}
+              aria-controls="score-dock-settings"
+            >
+              <span aria-hidden="true">⚙</span> Ajustes{' '}
+              <span aria-hidden="true">{settingsOpen ? '▴' : '▾'}</span>
+            </button>
+          </div>
+
+          {settingsOpen && (
+            <div id="score-dock-settings" className="score-dock-row score-dock-settings">
+              <span className="score-dock-label">Semitono:</span>
+              <div className="score-dock-segmented" role="group" aria-label="Transposición">
+                <button
+                  type="button"
+                  className="score-dock-segmented-btn"
+                  onClick={() => changeTranspose(-1)}
+                  disabled={transpose <= -MAX_TRANSPOSE}
+                  aria-label="Bajar un semitono"
+                  title="Bajar un semitono"
+                >
+                  −
+                </button>
+                <span className="score-dock-transpose-value" aria-live="polite">
+                  {transpose > 0 ? `+${transpose}` : transpose}
+                </span>
+                <button
+                  type="button"
+                  className="score-dock-segmented-btn"
+                  onClick={() => changeTranspose(1)}
+                  disabled={transpose >= MAX_TRANSPOSE}
+                  aria-label="Subir un semitono"
+                  title="Subir un semitono"
+                >
+                  +
+                </button>
+              </div>
+
+              <div className="score-dock-segmented" role="group" aria-label="Sonido">
+                {PLAYBACK_MODES.map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    className="score-dock-segmented-btn"
+                    onClick={() => changePlaybackMode(m.value)}
+                    aria-pressed={m.value === playbackMode}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

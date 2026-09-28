@@ -42,7 +42,9 @@
   position: fixed;
   bottom: 16px;
   right: 16px;
-  z-index: 100;
+  /* Above alphaTab's cursor layer (.at-cursors, z-index 1000), which would
+     otherwise draw the bar highlight and beat line over the dock. */
+  z-index: 1100;
   max-width: calc(100vw - 32px);
 
   display: flex;
@@ -61,10 +63,24 @@
   font-size: 0.9rem;
 }
 
-/* Progress bar — click to seek */
+/* Progress row: bar (click to seek) and elapsed / total time. */
+
+.score-dock-progress-row {
+  flex-wrap: nowrap;
+}
 
 .score-dock-progress {
-  padding: 4px 0;
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.score-dock-time {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(205, 210, 219, 0.75);
+  white-space: nowrap;
 }
 
 .score-dock-progress-track {
@@ -98,7 +114,7 @@
   letter-spacing: 0.02em;
 }
 
-/* Transport buttons (play / pause / stop) */
+/* Transport buttons (previous measure / play-pause / next measure) */
 
 .score-dock-transport {
   display: inline-flex;
@@ -247,3 +263,77 @@
   outline-offset: 2px;
 }
 
+/* Play / pause: the main control, larger than the rest. */
+.score-dock-btn-primary {
+  font-size: 1.15rem;
+  padding: 8px 16px;
+  background: rgba(122, 163, 211, 0.22);
+  border-color: rgba(122, 163, 211, 0.4);
+}
+
+/* "⚙ Ajustes" toggle: bordered and labeled so it reads as a button. */
+.score-dock-settings-toggle {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  color: #e3e6ed;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background 100ms ease,
+    border-color 100ms ease;
+}
+
+.score-dock-settings-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.score-dock-settings-toggle[aria-expanded='true'] {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.score-dock-settings-toggle:focus-visible {
+  outline: 2px solid #7aa3d3;
+  outline-offset: 2px;
+}
+
+/* Collapsible settings (Semitono, Instrumento / Coro). */
+.score-dock-settings {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Long-pressing a voice chip solos it; keep mobile browsers from selecting
+   the label or opening a callout meanwhile. */
+.score-dock-voice {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Phones: full-width bar at the bottom. */
+@media (max-width: 600px) {
+  .score-dock {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    max-width: none;
+  }
+}
+
+/* Touch screens: 44px minimum touch targets. */
+@media (pointer: coarse) {
+  .score-dock-btn,
+  .score-dock-settings-toggle,
+  .score-dock-segmented-btn,
+  .score-dock-voice {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
