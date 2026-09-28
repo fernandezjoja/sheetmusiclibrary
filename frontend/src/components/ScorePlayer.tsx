@@ -4,7 +4,6 @@ import { fitTimeSignaturesToContent, hideRewrittenTimeSignatures } from './alpha
 import { hideInvisibleNotes, patchHiddenNotes } from './alphaTabHiddenNotes'
 import { layOutRecitationLyrics } from './alphaTabLyrics'
 import { applyMusicXmlLayout, findMusicXmlLayout, type MusicXmlLayout } from './alphaTabModelLayout'
-import { findPageBreaks, separatePageBreaks, setPageBreaks } from './alphaTabPageBreaks'
 import { findSlashedNotes, markSlashedNotes, patchSlashedNotes, type SlashedNote } from './alphaTabSlashedNotes'
 import { placeSlursByVoice } from './alphaTabSlurDirection'
 import { listVoiceChannels, routeVoicesToChannels, type VoiceChannel } from './alphaTabVoiceChannels'
@@ -136,6 +135,7 @@ export default function ScorePlayer({ url }: Props) {
   const [status, setStatus] = useState<Status>('loading-score')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [playing, setPlaying] = useState(false)
+  const [stopped, setStopped] = useState(true)
   const [voices, setVoices] = useState<VoiceInfo[]>([])
   const [position, setPosition] = useState({ current: 0, end: 0, tick: 0 })
   // Measure start ticks in playback order (repeats included), refreshed on
@@ -161,6 +161,7 @@ export default function ScorePlayer({ url }: Props) {
     setVoices([])
     setTranspose(0)
     setPlaying(false)
+    setStopped(true)
     setPosition({ current: 0, end: 0, tick: 0 })
     setMeasureStarts([])
 
@@ -180,15 +181,14 @@ export default function ScorePlayer({ url }: Props) {
     //   - bar numbers hidden.
     //   - staff text (MusicXML <words>, e.g. "Obikhod Tono 8 Estiquio"):
     //     14px bold italic instead of 12px italic.
-    //   - lyrics upright (12px, not italic).
+    //   - lyrics upright, 15px (about the old OSMD player's size on desktop).
     //   - core.useWorkers false: render on the main thread so the
     //     renderer patches (alphaTabFreeTime.ts, alphaTabSlurDirection.ts,
-    //     alphaTabLyrics.ts, alphaTabPageBreaks.ts, alphaTabHiddenNotes.ts,
-    //     alphaTabSlashedNotes.ts) apply.
+    //     alphaTabLyrics.ts, alphaTabHiddenNotes.ts, alphaTabSlashedNotes.ts)
+    //     apply.
     hideRewrittenTimeSignatures()
     placeSlursByVoice()
     layOutRecitationLyrics()
-    separatePageBreaks()
     patchHiddenNotes()
     patchSlashedNotes()
     routeVoicesToChannels()
@@ -204,7 +204,7 @@ export default function ScorePlayer({ url }: Props) {
             // CSS string form: alphaTab's Font.fromJson expects a Map for the
             // object form (despite its types) and throws on a plain object.
             [NotationElement.EffectText, 'italic bold 14px Georgia, serif'],
-            [NotationElement.EffectLyrics, '12px Georgia, serif'],
+            [NotationElement.EffectLyrics, '15px Georgia, serif'],
           ]),
         },
       },
@@ -236,15 +236,13 @@ export default function ScorePlayer({ url }: Props) {
     })
 
     // The MusicXML is fetched here rather than through core.file so what
-    // alphaTab's importer drops (page breaks, slashed noteheads, MuseScore's
-    // system layout) can be read from the same bytes.
-    let pageBreaks = new Set<number>()
+    // alphaTab's importer drops (slashed noteheads, MuseScore's system
+    // layout) can be read from the same bytes.
     let slashedNotes: SlashedNote[] = []
     let musicXmlLayout: MusicXmlLayout | null = null
     let cancelled = false
 
     api.scoreLoaded.on((score) => {
-      setPageBreaks(score, pageBreaks)
       fitTimeSignaturesToContent(score)
       hideInvisibleNotes(score)
       markSlashedNotes(score, slashedNotes)
@@ -267,6 +265,7 @@ export default function ScorePlayer({ url }: Props) {
     api.playerReady.on(() => setStatus('ready'))
     api.playerStateChanged.on((e) => {
       setPlaying(e.state === synth.PlayerState.Playing)
+      setStopped(e.stopped)
     })
     api.playerPositionChanged.on((e) => {
       setPosition({ current: e.currentTime, end: e.endTime, tick: e.currentTick })
@@ -282,7 +281,6 @@ export default function ScorePlayer({ url }: Props) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const bytes = new Uint8Array(await res.arrayBuffer())
         if (cancelled) return
-        pageBreaks = findPageBreaks(bytes)
         slashedNotes = findSlashedNotes(bytes)
         musicXmlLayout = findMusicXmlLayout(bytes)
         api.load(bytes, [-1])
@@ -506,6 +504,16 @@ export default function ScorePlayer({ url }: Props) {
               <button
                 type="button"
                 className="score-dock-btn"
+                onClick={() => apiRef.current?.stop()}
+                disabled={stopped}
+                aria-label="Detener"
+                title="Detener (vuelve al inicio)"
+              >
+                ⏹
+              </button>
+              <button
+                type="button"
+                className="score-dock-btn"
                 onClick={handleNextMeasure}
                 disabled={inLastMeasure}
                 aria-label="Compás siguiente"
@@ -555,7 +563,9 @@ export default function ScorePlayer({ url }: Props) {
               aria-controls="score-dock-settings"
             >
               <span aria-hidden="true">⚙</span> Ajustes{' '}
-              <span aria-hidden="true">{settingsOpen ? '▴' : '▾'}</span>
+              <span className="score-dock-settings-arrow" aria-hidden="true">
+                ▶
+              </span>
             </button>
           </div>
 

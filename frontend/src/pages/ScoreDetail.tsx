@@ -132,23 +132,10 @@ export default function ScoreDetail() {
 
       {score.musicxmlPath ? (
         <>
-          <aside
-            role="note"
-            style={{
-              margin: '0 0 16px',
-              padding: '12px 16px',
-              background: '#fff8e6',
-              border: '1px solid #f5e6c8',
-              borderLeft: '4px solid #d8a93b',
-              borderRadius: 4,
-              color: '#5c4a1a',
-              fontSize: '0.9rem',
-            }}
-          >
-            <strong style={{ display: 'block', marginBottom: 6 }}>
-              Sobre el reproductor
-            </strong>
-            <ul style={{ margin: 0, paddingLeft: 20 }}>
+          {/* Collapsed by default; clicking the title row opens / folds it. */}
+          <details className="player-notice">
+            <summary>Acerca del reproductor</summary>
+            <ul style={{ margin: '0 16px', padding: '0 0 12px 20px' }}>
               <li style={{ marginBottom: 4 }}>
                 El motor de reproducción interpreta cada nota tal como se
                 muestra en la partitura. Cuando varios versos se cantan
@@ -170,7 +157,7 @@ export default function ScoreDetail() {
                 cualquier irregularidad — es una versión temprana.
               </li>
             </ul>
-          </aside>
+          </details>
           <ScorePlayer key={playerKey} url={api.musicxmlUrl(score.id)} />
           <p
             style={{

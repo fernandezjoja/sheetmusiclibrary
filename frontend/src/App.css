@@ -59,3 +59,49 @@
 .app-main {
   text-align: left;
 }
+
+/* "Acerca del reproductor" notice on the score page: a native <details>
+   accordion, collapsed to its title row until clicked. */
+.player-notice {
+  margin: 0 0 16px;
+  background: #fff8e6;
+  border: 1px solid #f5e6c8;
+  border-left: 4px solid #d8a93b;
+  border-radius: 4px;
+  color: #5c4a1a;
+  font-size: 0.9rem;
+}
+
+.player-notice > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.player-notice > summary::-webkit-details-marker {
+  display: none;
+}
+
+.player-notice > summary::before {
+  content: '▶';
+  display: inline-block;
+  width: 1em;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #b5872a;
+  transition: transform 150ms ease;
+}
+
+.player-notice[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.player-notice > summary:focus-visible {
+  outline: 2px solid #d8a93b;
+  outline-offset: -2px;
+}

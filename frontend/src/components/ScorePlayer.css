@@ -114,7 +114,7 @@
   letter-spacing: 0.02em;
 }
 
-/* Transport buttons (previous measure / play-pause / next measure) */
+/* Transport buttons (previous measure / play-pause / stop / next measure) */
 
 .score-dock-transport {
   display: inline-flex;
@@ -286,6 +286,19 @@
   transition:
     background 100ms ease,
     border-color 100ms ease;
+}
+
+/* Same convention as the "Acerca del reproductor" accordion: ▶ when closed,
+   rotated to point down when open. */
+.score-dock-settings-arrow {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.8rem;
+  transition: transform 150ms ease;
+}
+
+.score-dock-settings-toggle[aria-expanded='true'] .score-dock-settings-arrow {
+  transform: rotate(90deg);
 }
 
 .score-dock-settings-toggle:hover {
