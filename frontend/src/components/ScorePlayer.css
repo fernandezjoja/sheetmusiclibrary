@@ -69,6 +69,34 @@
   font-size: 0.9rem;
 }
 
+/* "Cargando audio…" shown in place of the time until the audio is ready. */
+.score-dock-time-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-dock-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #7aa3d3;
+  border-radius: 50%;
+  animation: score-dock-spin 0.8s linear infinite;
+}
+
+@keyframes score-dock-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .score-dock-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
 /* Progress row: bar (click to seek) and elapsed / total time. */
 
 .score-dock-progress-row {
@@ -263,6 +291,21 @@
   text-decoration: line-through;
   text-decoration-color: rgba(205, 210, 219, 0.5);
   opacity: 0.7;
+}
+
+/* Grey placeholder chips while the audio loads. */
+.score-dock-voice:disabled {
+  --voice-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(205, 210, 219, 0.5);
+  text-decoration: none;
+  cursor: default;
+}
+
+.score-dock-settings-toggle:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .score-dock-voice:focus-visible {

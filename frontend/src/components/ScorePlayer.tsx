@@ -471,11 +471,16 @@ export default function ScorePlayer({ url }: Props) {
   const shownTime = finished ? position.end : position.current
   const progress = position.end > 0 ? (shownTime / position.end) * 100 : 0
 
+  // Until the synth and soundfont are ready the dock renders its full layout
+  // with every control disabled, so it doesn't change height when they load.
+  const ready = status === 'ready'
+
   const playButton = (
     <button
       type="button"
       className="score-dock-btn score-dock-btn-primary"
       onClick={() => apiRef.current?.playPause()}
+      disabled={!ready}
       aria-label={playing ? 'Pausa' : 'Reproducir'}
       title={playing ? 'Pausa (espacio)' : 'Reproducir (espacio)'}
     >
@@ -486,12 +491,13 @@ export default function ScorePlayer({ url }: Props) {
   return (
     <div>
       {status === 'loading-score' && <p>Cargando partitura…</p>}
-      {status === 'loading-audio' && <p>Cargando audio…</p>}
       {status === 'error' && (
         <p role="alert">No se pudo cargar la partitura: {errorMessage}</p>
       )}
 
-      {status === 'ready' && (
+      {/* The dock shows from the start at its full size; controls stay
+          disabled until the audio is ready (playerReady). */}
+      {status !== 'error' && (
         <div className="score-dock">
           {/* Progress bar with time; click to seek. */}
           <div className="score-dock-row score-dock-progress-row">
@@ -509,9 +515,16 @@ export default function ScorePlayer({ url }: Props) {
                 <div className="score-dock-progress-fill" style={{ width: `${progress}%` }} />
               </div>
             </div>
-            <span className="score-dock-time">
-              {formatTime(shownTime)} / {formatTime(position.end)}
-            </span>
+            {ready ? (
+              <span className="score-dock-time">
+                {formatTime(shownTime)} / {formatTime(position.end)}
+              </span>
+            ) : (
+              <span className="score-dock-time score-dock-time-loading" role="status">
+                <span className="score-dock-spinner" aria-hidden="true" />
+                Cargando audio…
+              </span>
+            )}
           </div>
 
           <div className="score-dock-row">
@@ -520,7 +533,7 @@ export default function ScorePlayer({ url }: Props) {
                 type="button"
                 className="score-dock-btn"
                 onClick={handlePreviousMeasure}
-                disabled={atFirstMeasureStart}
+                disabled={!ready || atFirstMeasureStart}
                 aria-label="Compás anterior"
                 title="Compás anterior (←)"
               >
@@ -531,7 +544,7 @@ export default function ScorePlayer({ url }: Props) {
                 type="button"
                 className="score-dock-btn"
                 onClick={() => apiRef.current?.stop()}
-                disabled={stopped}
+                disabled={!ready || stopped}
                 aria-label="Detener"
                 title="Detener (vuelve al inicio)"
               >
@@ -541,7 +554,7 @@ export default function ScorePlayer({ url }: Props) {
                 type="button"
                 className="score-dock-btn"
                 onClick={handleNextMeasure}
-                disabled={inLastMeasure}
+                disabled={!ready || inLastMeasure}
                 aria-label="Compás siguiente"
                 title="Compás siguiente (→)"
               >
@@ -550,7 +563,17 @@ export default function ScorePlayer({ url }: Props) {
             </div>
           </div>
 
-          {voices.length > 0 && (
+          {!ready && (
+            <div className="score-dock-voices" aria-hidden="true">
+              {SATB_VOICES.map((v) => (
+                <button key={v.label} type="button" className="score-dock-voice" disabled>
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {ready && voices.length > 0 && (
             <div className="score-dock-voices" role="group" aria-label="Voces">
               {voices.map((info, i) => (
                 <button
@@ -585,6 +608,7 @@ export default function ScorePlayer({ url }: Props) {
               type="button"
               className="score-dock-settings-toggle"
               onClick={() => setSettingsOpen((o) => !o)}
+              disabled={!ready}
               aria-expanded={settingsOpen}
               aria-controls="score-dock-settings"
             >
@@ -593,7 +617,7 @@ export default function ScorePlayer({ url }: Props) {
             </button>
           </div>
 
-          {settingsOpen && (
+          {ready && settingsOpen && (
             <div id="score-dock-settings" className="score-dock-row score-dock-settings">
               <span className="score-dock-label">Semitono:</span>
               <div className="score-dock-segmented" role="group" aria-label="Transposición">
