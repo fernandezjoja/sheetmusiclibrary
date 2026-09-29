@@ -147,6 +147,11 @@ export default function ScorePlayer({ url }: Props) {
   const [stopped, setStopped] = useState(true)
   const [voices, setVoices] = useState<VoiceInfo[]>([])
   const [position, setPosition] = useState({ current: 0, end: 0, tick: 0 })
+  // alphaTab rewinds to 0 the moment a piece finishes, so the bar would drop
+  // from ~99% to empty without ever showing the end. Show it full until the
+  // next play or seek.
+  const [finished, setFinished] = useState(false)
+  const finishedAtRef = useRef(0)
   // Measure start ticks in playback order (repeats included), refreshed on
   // every MIDI (re)generation.
   const [measureStarts, setMeasureStarts] = useState<number[]>([])
@@ -172,6 +177,7 @@ export default function ScorePlayer({ url }: Props) {
     setPlaying(false)
     setStopped(true)
     setPosition({ current: 0, end: 0, tick: 0 })
+    setFinished(false)
     setMeasureStarts([])
 
     // alphaTab defaults, except:
@@ -273,11 +279,21 @@ export default function ScorePlayer({ url }: Props) {
     })
     api.playerReady.on(() => setStatus('ready'))
     api.playerStateChanged.on((e) => {
-      setPlaying(e.state === synth.PlayerState.Playing)
+      const isPlaying = e.state === synth.PlayerState.Playing
+      setPlaying(isPlaying)
       setStopped(e.stopped)
+      if (isPlaying) setFinished(false)
+    })
+    api.playerFinished.on(() => {
+      finishedAtRef.current = Date.now()
+      setFinished(true)
     })
     api.playerPositionChanged.on((e) => {
       setPosition({ current: e.currentTime, end: e.endTime, tick: e.currentTick })
+      // alphaTab's own rewind right after finishing is reported as a seek to
+      // 0; only other seeks (note click, progress bar, measure jump) count.
+      const autoRewind = e.currentTime === 0 && Date.now() - finishedAtRef.current < 100
+      if (e.isSeek && !autoRewind) setFinished(false)
     })
     api.error.on((e) => {
       setErrorMessage(e.message)
@@ -452,7 +468,8 @@ export default function ScorePlayer({ url }: Props) {
     return () => document.removeEventListener('keydown', onKeyDown)
   })
 
-  const progress = position.end > 0 ? (position.current / position.end) * 100 : 0
+  const shownTime = finished ? position.end : position.current
+  const progress = position.end > 0 ? (shownTime / position.end) * 100 : 0
 
   const playButton = (
     <button
@@ -484,8 +501,8 @@ export default function ScorePlayer({ url }: Props) {
               aria-label="Posición de reproducción"
               aria-valuemin={0}
               aria-valuemax={Math.round(position.end)}
-              aria-valuenow={Math.round(position.current)}
-              aria-valuetext={`${formatTime(position.current)} de ${formatTime(position.end)}`}
+              aria-valuenow={Math.round(shownTime)}
+              aria-valuetext={`${formatTime(shownTime)} de ${formatTime(position.end)}`}
               onClick={handleSeek}
             >
               <div className="score-dock-progress-track">
@@ -493,7 +510,7 @@ export default function ScorePlayer({ url }: Props) {
               </div>
             </div>
             <span className="score-dock-time">
-              {formatTime(position.current)} / {formatTime(position.end)}
+              {formatTime(shownTime)} / {formatTime(position.end)}
             </span>
           </div>
 

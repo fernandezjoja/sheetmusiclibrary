@@ -101,7 +101,8 @@
   position: absolute;
   inset: 0;
   background: #7aa3d3;
-  transition: width 120ms linear;
+  /* No width transition: alphaTab reports the position every few ms, and an
+     animation only made the bar trail playback. */
 }
 
 /* Generic flex row inside the dock */
