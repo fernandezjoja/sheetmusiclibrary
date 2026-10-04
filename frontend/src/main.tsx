@@ -9,8 +9,7 @@ import LoginPage from './pages/LoginPage.tsx'
 import BibliotecaHub from './pages/BibliotecaHub.tsx'
 import Octoechos from './pages/Octoechos.tsx'
 import GrandesFiestas from './pages/GrandesFiestas.tsx'
-import Panikhida from './pages/Panikhida.tsx'
-import Matrimonio from './pages/Matrimonio.tsx'
+import ServicePage from './pages/ServicePage.tsx'
 import ScoresList from './pages/ScoresList.tsx'
 import ScoreDetail from './pages/ScoreDetail.tsx'
 import AdminHub from './pages/AdminHub.tsx'
@@ -34,10 +33,38 @@ createRoot(document.getElementById('root')!).render(
             <Route path="biblioteca/octoechos" element={<Octoechos />} />
             <Route path="biblioteca/grandesfiestas" element={<GrandesFiestas />} />
             <Route
+              path="biblioteca/divinaliturgia"
+              element={
+                <RequireAuth>
+                  <ServicePage
+                    title="Divina Liturgia"
+                    tag="service:divina-liturgia"
+                    description="Liturgia eucarística."
+                  />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="biblioteca/visperasmayores"
+              element={
+                <RequireAuth>
+                  <ServicePage
+                    title="Vísperas Mayores"
+                    tag="service:visperas"
+                    description="Servicio vespertino."
+                  />
+                </RequireAuth>
+              }
+            />
+            <Route
               path="biblioteca/panikhida"
               element={
                 <RequireAuth>
-                  <Panikhida />
+                  <ServicePage
+                    title="Panikhida"
+                    tag="service:panikhida"
+                    description="Servicio de conmemoración por los difuntos."
+                  />
                 </RequireAuth>
               }
             />
@@ -45,7 +72,11 @@ createRoot(document.getElementById('root')!).render(
               path="biblioteca/matrimonio"
               element={
                 <RequireAuth>
-                  <Matrimonio />
+                  <ServicePage
+                    title="Matrimonio"
+                    tag="service:matrimonio"
+                    description="Sacramento del matrimonio."
+                  />
                 </RequireAuth>
               }
             />

@@ -21,8 +21,20 @@ function orderOf(score: ScoreListItem): number {
   return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY
 }
 
-export default function Matrimonio() {
-  usePageTitle('Matrimonio')
+type ServicePageProps = {
+  title: string
+  /** Full tag to filter by, e.g. `service:panikhida`. */
+  tag: string
+  description: string
+}
+
+/**
+ * Listing page for one service: every score carrying `tag`, in liturgical
+ * order. A score can carry several `service:` tags (see TAGS_REF.md), so the
+ * same piece may appear on more than one service page.
+ */
+export default function ServicePage({ title, tag, description }: ServicePageProps) {
+  usePageTitle(title)
   const [scores, setScores] = useState<ScoreListItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,10 +45,10 @@ export default function Matrimonio() {
   if (error) return <p role="alert">Error al cargar las partituras: {error}</p>
   if (!scores) return <p>Cargando…</p>
 
-  // Filter to scores tagged with service:matrimonio, then sort by liturgical
+  // Filter to scores carrying the tag, then sort by liturgical
   // order with a title-tiebreaker.
   const items = scores
-    .filter((s) => s.tags.includes('service:matrimonio'))
+    .filter((s) => s.tags.includes(tag))
     .sort((a, b) => {
       const o = orderOf(a) - orderOf(b)
       if (o !== 0) return o
@@ -46,9 +58,9 @@ export default function Matrimonio() {
   if (items.length === 0) {
     return (
       <article>
-        <h2>Matrimonio</h2>
+        <h2>{title}</h2>
         <p style={{ color: 'var(--text)', fontStyle: 'italic' }}>
-          No hay piezas etiquetadas con <code>service:matrimonio</code> todavía.
+          No hay piezas etiquetadas con <code>{tag}</code> todavía.
         </p>
         <p style={{ marginTop: 24 }}>
           <Link to="/biblioteca">← Volver a la biblioteca</Link>
@@ -59,9 +71,9 @@ export default function Matrimonio() {
 
   return (
     <article>
-      <h2>Matrimonio</h2>
+      <h2>{title}</h2>
       <p style={{ color: 'var(--text)' }}>
-        Sacramento del matrimonio. Piezas en orden litúrgico.
+        {description} Piezas en orden litúrgico.
       </p>
 
       <ul style={{ listStyle: 'none', padding: 0, margin: '16px 0 0' }}>

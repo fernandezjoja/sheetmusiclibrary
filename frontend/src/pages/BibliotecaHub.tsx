@@ -5,7 +5,7 @@ import { usePageTitle } from '../usePageTitle'
 /**
  * Visibility model for the hub's sub-groups (top-to-bottom order):
  *
- *   - Servicios del Ciclo (signed-in only, still placeholder)
+ *   - Servicios del Ciclo (signed-in only) — Divina Liturgia + Vísperas Mayores
  *   - Misterios y otros servicios (signed-in only) — has the Panikhida page
  *   - Año Litúrgico (always visible) — Octoechos + Grandes Fiestas
  *   - Todas (always visible) — escape-hatch list of every score.
@@ -15,10 +15,11 @@ import { usePageTitle } from '../usePageTitle'
  * focused on the public-facing categories.
  */
 const groupTitleStyle = { margin: '28px 0 8px' } as const
-const placeholderStyle = {
-  color: 'var(--text)',
-  fontStyle: 'italic',
-  paddingLeft: 16,
+const separatorStyle = {
+  width: 48,
+  margin: '14px auto',
+  border: 0,
+  borderTop: '1px solid var(--border)',
 } as const
 
 export default function BibliotecaHub() {
@@ -35,7 +36,28 @@ export default function BibliotecaHub() {
       {isSignedIn && (
         <>
           <h3 style={groupTitleStyle}>Servicios del Ciclo</h3>
-          <p style={placeholderStyle}>(Por añadir)</p>
+
+          <Link to="/biblioteca/divinaliturgia" className="card-link">
+            <span className="card-link-body">
+              <span className="card-link-title">Divina Liturgia</span>
+              <span className="card-link-desc">
+                Liturgia eucarística.
+              </span>
+            </span>
+            <span className="card-link-arrow" aria-hidden="true">→</span>
+          </Link>
+
+          <hr style={separatorStyle} />
+
+          <Link to="/biblioteca/visperasmayores" className="card-link">
+            <span className="card-link-body">
+              <span className="card-link-title">Vísperas Mayores</span>
+              <span className="card-link-desc">
+                Servicio vespertino.
+              </span>
+            </span>
+            <span className="card-link-arrow" aria-hidden="true">→</span>
+          </Link>
 
           <h3 style={groupTitleStyle}>Misterios y otros servicios</h3>
 
