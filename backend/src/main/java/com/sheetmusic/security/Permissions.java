@@ -23,6 +23,7 @@ public record Permissions(
         boolean canSeeUnpublished,
         boolean canSeeReferences,
         boolean canDownloadMscz,
+        boolean canDownloadPdf,
         boolean isAdmin) {
 
     public static Permissions from(Authentication auth) {
@@ -30,7 +31,7 @@ public record Permissions(
         boolean atLeastUser = role.map(r -> r.atLeast(UserRole.USER)).orElse(false);
         boolean atLeastCollaborator = role.map(r -> r.atLeast(UserRole.COLLABORATOR)).orElse(false);
         boolean isAdmin = role.map(r -> r == UserRole.ADMIN).orElse(false);
-        return new Permissions(atLeastUser, atLeastCollaborator, atLeastCollaborator, isAdmin);
+        return new Permissions(atLeastUser, atLeastCollaborator, atLeastCollaborator, atLeastCollaborator, isAdmin);
     }
 
     private static Optional<UserRole> roleOf(Authentication auth) {

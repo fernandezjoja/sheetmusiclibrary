@@ -18,7 +18,7 @@ import { ScoresContext } from './scores'
  * `useScores`) and is reused until one of these happens:
  *
  *   - the signed-in user changes. The server returns a different list per
- *     role (unpublished scores, `hasMscz`), so a list is only ever shown to
+ *     role (unpublished scores, `hasPdf`, `hasMscz`), so a list is only ever shown to
  *     the user it was loaded for.
  *   - `useInvalidateScores` is called after an upload, edit or delete.
  *

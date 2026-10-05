@@ -32,14 +32,16 @@ public class ScoreService {
      * lazy proxies never escape.
      *
      * <p>{@code perms.canSeeUnpublished()} gates whether unpublished (test)
-     * scores are visible. {@code perms.canDownloadMscz()} gates the
-     * {@code hasMscz} flag the same way {@link ScoreView} does for detail.
+     * scores are visible. {@code perms.canDownloadPdf()} and
+     * {@code perms.canDownloadMscz()} gate the {@code hasPdf} and
+     * {@code hasMscz} flags the same way {@link ScoreView} does for detail.
      */
     @Transactional(readOnly = true)
     public List<ScoreListItem> listSlim(Permissions perms) {
         List<Score> scores = perms.canSeeUnpublished()
                 ? repo.findAll()
                 : repo.findByPublishedTrue();
+        boolean canSeePdf = perms.canDownloadPdf();
         boolean canSeeMscz = perms.canDownloadMscz();
         return scores.stream()
                 .map(s -> new ScoreListItem(
@@ -49,7 +51,7 @@ public class ScoreService {
                         s.getTags(),
                         s.isPublished(),
                         s.getMusicxmlPath() != null,
-                        s.getPdfPath() != null,
+                        s.getPdfPath() != null && canSeePdf,
                         s.getMsczPath() != null && canSeeMscz))
                 .toList();
     }

@@ -99,7 +99,7 @@ export default function ScoreDetail() {
           alignItems: 'center',
         }}
       >
-        {score.pdfPath && (
+        {score.hasPdf && (
           <a
             href={api.pdfUrl(score.id)}
             target="_blank"

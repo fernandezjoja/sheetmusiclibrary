@@ -7,9 +7,9 @@ package com.sheetmusic.user;
  * existing rows.
  */
 public enum UserRole {
-    /** Browse all scores including unpublished test versions; no references, no .mscz, no admin. */
+    /** Browse all scores including unpublished test versions; no references, no PDF, no .mscz, no admin. */
     USER(10),
-    /** USER + see references (with their notes) and download .mscz archives. */
+    /** USER + see references (with their notes) and download PDFs and .mscz archives. */
     COLLABORATOR(20),
     /** Full access: browse, upload, edit, delete, manage users. */
     ADMIN(30);

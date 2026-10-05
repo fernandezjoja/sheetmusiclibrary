@@ -8,10 +8,11 @@ import com.sheetmusic.security.Permissions;
  * Public read-side representation of a {@link Score}. Same shape as the entity
  * for fields that all roles can see, but:
  * <ul>
- * <li>{@code msczPath} (internal storage path) is replaced by {@code hasMscz} —
- * a boolean that's true only when the file exists <em>and</em> the requester
- * has permission to download it. Frontend renders the download button on
- * that flag alone, no client-side role logic.</li>
+ * <li>{@code pdfPath} and {@code msczPath} (internal storage paths) are
+ * replaced by {@code hasPdf} and {@code hasMscz} — booleans that are true only
+ * when the file exists <em>and</em> the requester has permission to download
+ * it. Frontend renders each download button on its flag alone, no client-side
+ * role logic.</li>
  * <li>{@code references} is empty for callers without
  * {@link Permissions#canSeeReferences()}. Recordings are visible to all
  * (including anonymous, on published scores) since the streaming endpoint
@@ -30,13 +31,14 @@ public record ScoreView(
         String composer,
         List<String> tags,
         String musicxmlPath,
-        String pdfPath,
+        boolean hasPdf,
         boolean hasMscz,
         boolean published,
         List<ScoreRecording> recordings,
         List<ScoreReference> references) {
 
     public static ScoreView from(Score score, Permissions perms) {
+        boolean hasPdf = score.getPdfPath() != null && perms.canDownloadPdf();
         boolean hasMscz = score.getMsczPath() != null && perms.canDownloadMscz();
         List<ScoreReference> refs = perms.canSeeReferences() ? score.getReferences() : List.of();
         return new ScoreView(
@@ -45,7 +47,7 @@ public record ScoreView(
                 score.getComposer(),
                 score.getTags(),
                 score.getMusicxmlPath(),
-                score.getPdfPath(),
+                hasPdf,
                 hasMscz,
                 score.isPublished(),
                 score.getRecordings(),
