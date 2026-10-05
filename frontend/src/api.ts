@@ -135,7 +135,7 @@ async function login(username: string, password: string): Promise<void> {
     body,
   })
   if (res.status === 200) return
-  if (res.status === 401) throw new ApiError('Invalid username or password', 401)
+  if (res.status === 401) throw new ApiError('Usuario o contraseña incorrectos', 401)
   throw new ApiError(`${res.status} ${res.statusText}`, res.status)
 }
 

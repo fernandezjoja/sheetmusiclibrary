@@ -1,26 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ScoreListItem } from '../api'
-import {
-  attributionParts,
-  formatTag,
-  freeFormTags,
-  liturgicalRoleParts,
-} from '../tags'
+import { formatTag } from '../tags'
+import ScoreListSkeleton from '../components/ScoreListSkeleton'
+import ScoreRow from '../components/ScoreRow'
 import { useScores } from '../scores'
 import { usePageTitle } from '../usePageTitle'
 import { compareTitlesEs } from '../sort'
-
-const searchStyle = {
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '8px 10px',
-  font: 'inherit',
-  border: '1px solid var(--border)',
-  borderRadius: 4,
-  background: 'var(--bg)',
-  color: 'var(--text-h)',
-} as const
 
 /** Lowercases and strips accents, so "proquimeno" matches "Proquímeno". */
 function normalize(text: string): string {
@@ -57,8 +43,27 @@ export default function ScoresList() {
   )
 
   if (error) return <p role="alert">Error al cargar las partituras: {error}</p>
-  if (!scores) return <p>Cargando…</p>
-  if (scores.length === 0) return <p>No hay partituras todavía.</p>
+  if (!scores) {
+    return (
+      <article>
+        <h2>Todas las partituras</h2>
+        <ScoreListSkeleton />
+      </article>
+    )
+  }
+  if (scores.length === 0) {
+    return (
+      <article>
+        <h2>Todas las partituras</h2>
+        <p style={{ color: 'var(--text)', fontStyle: 'italic' }}>
+          No hay partituras todavía.
+        </p>
+        <p style={{ marginTop: 24 }}>
+          <Link to="/biblioteca">← Volver a la biblioteca</Link>
+        </p>
+      </article>
+    )
+  }
 
   // Every word typed must appear somewhere in the score's text, in any order.
   const words = normalize(query).split(/\s+/).filter(Boolean)
@@ -67,14 +72,15 @@ export default function ScoresList() {
     .map(({ score }) => score)
 
   return (
-    <>
+    <article>
+      <h2>Todas las partituras</h2>
       <input
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Buscar por título, compositor o etiqueta…"
         aria-label="Buscar partituras"
-        style={searchStyle}
+        className="search-input"
       />
       <p
         role="status"
@@ -89,79 +95,15 @@ export default function ScoresList() {
           Ninguna partitura coincide con «{query.trim()}».
         </p>
       )}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {results.map((s) => {
-          const attribution = attributionParts(s)
-          const liturgical = liturgicalRoleParts(s)
-          const freeForm = freeFormTags(s)
-          const hasSecondaryLine = liturgical.length > 0 || freeForm.length > 0
-
-          return (
-            <li
-              key={s.id}
-              style={{
-                padding: '10px 0',
-                borderBottom: '1px solid var(--border)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'baseline',
-                  gap: 12,
-                }}
-              >
-                <Link to={`/scores/${s.id}`} style={{ fontWeight: 500 }}>
-                  {s.title}
-                  {!s.published && (
-                    <span
-                      style={{
-                        marginLeft: 8,
-                        fontSize: '0.7em',
-                        fontWeight: 600,
-                        padding: '1px 6px',
-                        borderRadius: 3,
-                        background: '#f5e6c8',
-                        color: '#8a5a00',
-                        verticalAlign: 'middle',
-                      }}
-                      title="Versión de prueba — visible solo para usuarios autenticados"
-                    >
-                      PRUEBA
-                    </span>
-                  )}
-                </Link>
-                {attribution.length > 0 && (
-                  <span
-                    style={{
-                      color: 'var(--text)',
-                      fontSize: '0.95rem',
-                      textAlign: 'right',
-                    }}
-                  >
-                    {attribution.join(' · ')}
-                  </span>
-                )}
-              </div>
-              {hasSecondaryLine && (
-                <div
-                  style={{
-                    marginTop: 4,
-                    color: 'var(--text)',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  {liturgical.length > 0 && liturgical.join(' · ')}
-                  {liturgical.length > 0 && freeForm.length > 0 && ' · '}
-                  {freeForm.length > 0 &&
-                    freeForm.map((t) => `#${t}`).join(' ')}
-                </div>
-              )}
-            </li>
-          )
-        })}
+      <ul className="score-list" style={{ marginTop: 12 }}>
+        {results.map((s) => (
+          <ScoreRow key={s.id} score={s} />
+        ))}
       </ul>
-    </>
+
+      <p style={{ marginTop: 24 }}>
+        <Link to="/biblioteca">← Volver a la biblioteca</Link>
+      </p>
+    </article>
   )
 }
