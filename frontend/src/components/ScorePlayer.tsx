@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlphaTabApi, NotationElement, PlayerMode, model, synth } from '@coderline/alphatab'
+import { mergeDirectionWords } from './alphaTabDirectionWords'
 import { fitTimeSignaturesToContent, hideRewrittenTimeSignatures } from './alphaTabFreeTime'
 import { hideInvisibleNotes, patchHiddenNotes } from './alphaTabHiddenNotes'
 import { layOutRecitationLyrics } from './alphaTabLyrics'
@@ -308,7 +309,7 @@ export default function ScorePlayer({ url }: Props) {
         if (cancelled) return
         slashedNotes = findSlashedNotes(bytes)
         musicXmlLayout = findMusicXmlLayout(bytes)
-        api.load(bytes, [-1])
+        api.load(mergeDirectionWords(bytes), [-1])
       } catch (e: unknown) {
         if (cancelled) return
         setErrorMessage(e instanceof Error ? e.message : String(e))
