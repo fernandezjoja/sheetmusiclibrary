@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, type ScoreListItem } from '../api'
+import type { ScoreListItem } from '../api'
 import {
   attributionParts,
   findTag,
   freeFormTags,
   liturgicalRoleParts,
 } from '../tags'
+import { useScores } from '../scores'
 import { usePageTitle } from '../usePageTitle'
 
 /**
@@ -26,6 +26,21 @@ type ServicePageProps = {
   /** Full tag to filter by, e.g. `service:panikhida`. */
   tag: string
   description: string
+  /**
+   * Hide the pieces that change with the day: anything with a `context:` tag
+   * other than `context:default`, plus Proquímenos and Aleluyas. Leaves only
+   * the fixed parts of the service.
+   */
+  ordinaryOnly?: boolean
+}
+
+function changesWithTheDay(score: ScoreListItem): boolean {
+  return score.tags.some(
+    (t) =>
+      (t.startsWith('context:') && t !== 'context:default') ||
+      t === 'slot:proquimeno' ||
+      t === 'slot:aleluya',
+  )
 }
 
 /**
@@ -33,14 +48,14 @@ type ServicePageProps = {
  * order. A score can carry several `service:` tags (see TAGS_REF.md), so the
  * same piece may appear on more than one service page.
  */
-export default function ServicePage({ title, tag, description }: ServicePageProps) {
+export default function ServicePage({
+  title,
+  tag,
+  description,
+  ordinaryOnly = false,
+}: ServicePageProps) {
   usePageTitle(title)
-  const [scores, setScores] = useState<ScoreListItem[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    api.listScores().then(setScores).catch((e: Error) => setError(e.message))
-  }, [])
+  const { scores, error } = useScores()
 
   if (error) return <p role="alert">Error al cargar las partituras: {error}</p>
   if (!scores) return <p>Cargando…</p>
@@ -49,6 +64,7 @@ export default function ServicePage({ title, tag, description }: ServicePageProp
   // order with a title-tiebreaker.
   const items = scores
     .filter((s) => s.tags.includes(tag))
+    .filter((s) => !ordinaryOnly || !changesWithTheDay(s))
     .sort((a, b) => {
       const o = orderOf(a) - orderOf(b)
       if (o !== 0) return o

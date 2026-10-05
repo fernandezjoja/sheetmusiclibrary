@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, type ScoreListItem } from '../api'
+import type { ScoreListItem } from '../api'
 import {
   attributionParts,
   findTag,
   freeFormTags,
   liturgicalRoleParts,
 } from '../tags'
+import { useScores } from '../scores'
 import { usePageTitle } from '../usePageTitle'
 
 // Piece-type priority within each tone. The list order IS the display order:
@@ -37,12 +37,7 @@ function toneNumber(score: ScoreListItem): number {
 
 export default function Octoechos() {
   usePageTitle('Octoechos')
-  const [scores, setScores] = useState<ScoreListItem[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    api.listScores().then(setScores).catch((e: Error) => setError(e.message))
-  }, [])
+  const { scores, error } = useScores()
 
   if (error) return <p role="alert">Error al cargar las partituras: {error}</p>
   if (!scores) return <p>Cargando…</p>

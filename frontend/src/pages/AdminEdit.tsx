@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError, type Score } from '../api'
 import AdminRecordingsSection from '../components/AdminRecordingsSection'
 import AdminReferencesSection from '../components/AdminReferencesSection'
+import { useInvalidateScores } from '../scores'
 import { usePageTitle } from '../usePageTitle'
 
 const fieldStyle = {
@@ -24,6 +25,7 @@ const inputStyle = {
 export default function AdminEdit() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const invalidateScores = useInvalidateScores()
 
   const [loadStatus, setLoadStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -111,6 +113,7 @@ export default function AdminEdit() {
         pdf,
         mscz,
       })
+      invalidateScores()
       setResult(score)
       // Reset just the file pickers; keep metadata fields populated for
       // further edits.
@@ -146,6 +149,7 @@ export default function AdminEdit() {
     setFieldErrors([])
     try {
       await api.deleteScore(id)
+      invalidateScores()
       navigate('/biblioteca/todas', { replace: true })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e))
@@ -168,24 +172,6 @@ export default function AdminEdit() {
   return (
     <article>
       <h2>Editar «{score?.title ?? `partitura #${id}`}»</h2>
-
-      {result && (
-        <div
-          role="status"
-          style={{
-            border: '1px solid var(--border)',
-            borderRadius: 4,
-            padding: 12,
-            marginBottom: 16,
-            background: 'var(--code-bg)',
-          }}
-        >
-          ✓ Actualizada <strong>{result.title}</strong>{' '}
-          {result.composer ? `por ${result.composer}` : ''}{' '}
-          {result.published ? '(publicada)' : '(prueba — solo admins)'} —{' '}
-          <Link to={`/scores/${result.id}`}>abrir</Link>.
-        </div>
-      )}
 
       {error && (
         <div
@@ -329,6 +315,24 @@ export default function AdminEdit() {
         >
           {submitting ? 'Guardando…' : 'Guardar cambios'}
         </button>
+
+        {result && (
+          <div
+            role="status"
+            style={{
+              border: '1px solid var(--border)',
+              borderRadius: 4,
+              padding: 12,
+              marginTop: 16,
+              background: 'var(--code-bg)',
+            }}
+          >
+            ✓ Actualizada <strong>{result.title}</strong>{' '}
+            {result.composer ? `por ${result.composer}` : ''}{' '}
+            {result.published ? '(publicada)' : '(prueba — solo admins)'} —{' '}
+            <Link to={`/scores/${result.id}`}>abrir</Link>.
+          </div>
+        )}
       </form>
 
       {score && (

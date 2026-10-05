@@ -1,22 +1,16 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, type ScoreListItem } from '../api'
 import {
   attributionParts,
   freeFormTags,
   liturgicalRoleParts,
 } from '../tags'
+import { useScores } from '../scores'
 import { usePageTitle } from '../usePageTitle'
 import { compareTitlesEs } from '../sort'
 
 export default function ScoresList() {
   usePageTitle('Todas las partituras')
-  const [scores, setScores] = useState<ScoreListItem[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    api.listScores().then(setScores).catch((e: Error) => setError(e.message))
-  }, [])
+  const { scores, error } = useScores()
 
   if (error) return <p role="alert">Error al cargar las partituras: {error}</p>
   if (!scores) return <p>Cargando…</p>
