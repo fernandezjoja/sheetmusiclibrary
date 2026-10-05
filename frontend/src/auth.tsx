@@ -1,24 +1,9 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { api, type CurrentUser } from './api'
+import { AuthContext, useAuth } from './useAuth'
 
 export type { CurrentUser }
-
-type AuthState = {
-  user: CurrentUser | null
-  loading: boolean
-  login: (username: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthState | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null)
@@ -52,12 +37,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useAuth(): AuthState {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
-  return ctx
-}
-
 /**
  * Wraps a route that requires authentication. When `role` is provided, also
  * checks that the user has at least that role (USER or ADMIN). Redirects
@@ -74,7 +53,7 @@ export function RequireAuth({
   const { user, loading } = useAuth()
   const location = useLocation()
 
-  if (loading) return <p>Loading…</p>
+  if (loading) return <p>Cargando…</p>
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }

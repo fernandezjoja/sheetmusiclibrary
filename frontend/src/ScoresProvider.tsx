@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { api, type ScoreListItem } from './api'
-import { useAuth } from './auth'
+import { useAuth } from './useAuth'
 import { ScoresContext } from './scores'
 
 /**

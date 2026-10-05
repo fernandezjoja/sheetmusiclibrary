@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../auth'
+import { useAuth } from '../useAuth'
 import { ApiError } from '../api'
 import { usePageTitle } from '../usePageTitle'
 

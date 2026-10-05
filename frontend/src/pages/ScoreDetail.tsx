@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, type Score } from '../api'
-import { useAuth } from '../auth'
+import { useAuth } from '../useAuth'
 import { usePageTitle } from '../usePageTitle'
 import ScorePlayer from '../components/ScorePlayer'
 import YouTubeEmbed from '../components/YouTubeEmbed'
