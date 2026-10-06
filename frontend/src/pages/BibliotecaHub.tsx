@@ -23,7 +23,7 @@ const placeholderStyle = {
   paddingLeft: 16,
 } as const
 const separatorStyle = {
-  width: 48,
+  width: 192,
   margin: '14px auto',
   border: 0,
   borderTop: '1px solid var(--border)',
