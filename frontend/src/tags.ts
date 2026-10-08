@@ -71,6 +71,26 @@ export function liturgicalRoleParts(score: Taggable): string[] {
   return parts
 }
 
+/**
+ * Sort key from the `order:NNN` tag. 3-digit zero-padded by convention, but
+ * we parse to int and sort numerically so a missing pad doesn't break order.
+ * Missing/invalid `order:` lands at the end.
+ */
+function orderOf(score: Taggable): number {
+  const tag = findTag(score.tags, 'order:')
+  if (!tag) return Number.POSITIVE_INFINITY
+  const n = parseInt(tag.slice('order:'.length), 10)
+  return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY
+}
+
+/** Liturgical order within a service: by `order:` tag, then by title. */
+export function compareByOrder(a: Taggable & { title: string }, b: Taggable & { title: string }): number {
+  const o = orderOf(a) - orderOf(b)
+  // Both unordered gives Infinity - Infinity = NaN, which falls through too.
+  if (o < 0 || o > 0) return o
+  return a.title.localeCompare(b.title, 'es')
+}
+
 /** Tags without a `prefix:` portion (legacy / un-namespaced). */
 export function freeFormTags(score: Taggable): string[] {
   return score.tags.filter((t) => !t.includes(':') && !isTagHidden(t))

@@ -1,27 +1,15 @@
 import { Link } from 'react-router-dom'
 import type { ScoreListItem } from '../api'
-import { findTag } from '../tags'
+import { compareByOrder } from '../tags'
 import ScoreListSkeleton from '../components/ScoreListSkeleton'
 import ScoreRow from '../components/ScoreRow'
 import { useScores } from '../scores'
 import { usePageTitle } from '../usePageTitle'
 
-/**
- * Sort key from the `order:NNN` tag. 3-digit zero-padded by convention, but
- * we parse to int and sort numerically so a missing pad doesn't break order.
- * Missing/invalid `order:` lands at the end.
- */
-function orderOf(score: ScoreListItem): number {
-  const tag = findTag(score.tags, 'order:')
-  if (!tag) return Number.POSITIVE_INFINITY
-  const n = parseInt(tag.slice('order:'.length), 10)
-  return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY
-}
-
 type ServicePageProps = {
   title: string
-  /** Full tag to filter by, e.g. `service:panikhida`. */
-  tag: string
+  /** Full tags to filter by, e.g. `service:panikhida`. A score with any of them is listed. */
+  tags: string[]
   description: string
   /**
    * Hide the pieces that change with the day: anything with a `context:` tag
@@ -47,7 +35,7 @@ function changesWithTheDay(score: ScoreListItem): boolean {
  */
 export default function ServicePage({
   title,
-  tag,
+  tags,
   description,
   ordinaryOnly = false,
 }: ServicePageProps) {
@@ -64,23 +52,19 @@ export default function ServicePage({
     )
   }
 
-  // Filter to scores carrying the tag, then sort by liturgical
+  // Filter to scores carrying one of the tags, then sort by liturgical
   // order with a title-tiebreaker.
   const items = scores
-    .filter((s) => s.tags.includes(tag))
+    .filter((s) => tags.some((tag) => s.tags.includes(tag)))
     .filter((s) => !ordinaryOnly || !changesWithTheDay(s))
-    .sort((a, b) => {
-      const o = orderOf(a) - orderOf(b)
-      if (o !== 0) return o
-      return a.title.localeCompare(b.title, 'es')
-    })
+    .sort(compareByOrder)
 
   if (items.length === 0) {
     return (
       <article>
         <h2>{title}</h2>
         <p style={{ color: 'var(--text)', fontStyle: 'italic' }}>
-          No hay piezas etiquetadas con <code>{tag}</code> todavía.
+          No hay piezas etiquetadas con <code>{tags.join(' / ')}</code> todavía.
         </p>
         <p style={{ marginTop: 24 }}>
           <Link to="/biblioteca">← Volver a la biblioteca</Link>

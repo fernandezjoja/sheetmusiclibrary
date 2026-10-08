@@ -195,6 +195,23 @@ code {
   text-decoration: none;
 }
 
+/* Variant for the card that stands apart from the category cards (the
+   "Todas las partituras" entry): a neutral gray one step darker than the
+   page. Not the accent tint, which reads as hovered, and not white. Hover is
+   the regular .card-link:hover. */
+.card-link-featured:not(:hover) {
+  background: #eceef1;
+}
+
+/* Short centered rule between two cards of the same group, to set the
+   following card apart. Use as <hr className="card-separator" />. */
+.card-separator {
+  width: 192px;
+  margin: 14px auto;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
 .card-link-body {
   flex: 1;
   min-width: 0;

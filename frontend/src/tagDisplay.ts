@@ -37,6 +37,7 @@ export const TAG_DISPLAY: Record<string, string> = {
   'service:tropario': 'Tropario',
   'service:uncion': 'Unción',
   'service:visperas': 'Vísperas',
+  'service:visperas-mayores': 'Vísperas Mayores',
 
   // ---- slot: -----------------------------------------------------------
   'slot:primera-antifona': 'Primera Antífona',
@@ -91,6 +92,11 @@ export const TAG_DISPLAY: Record<string, string> = {
   'context:cuaresma': 'Cuaresma',
   'context:liturgia-basilio': 'Liturgia de San Basilio',
   'context:sabado-lazaro': 'Sábado de Lázaro',
+  'context:lunes-santo': 'Lunes Santo',
+  'context:martes-santo': 'Martes Santo',
+  'context:miercoles-santo': 'Miércoles Santo',
+  'context:jueves-santo': 'Jueves Santo',
+  'context:viernes-santo': 'Viernes Santo',
   'context:sabado-santo': 'Sábado Santo',
 
   // ---- liturgy-type: ---------------------------------------------------

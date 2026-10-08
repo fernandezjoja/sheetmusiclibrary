@@ -11,6 +11,8 @@ import BibliotecaHub from './pages/BibliotecaHub.tsx'
 import Octoechos from './pages/Octoechos.tsx'
 import GrandesFiestas from './pages/GrandesFiestas.tsx'
 import ServicePage from './pages/ServicePage.tsx'
+import SemanaSantaHub from './pages/SemanaSantaHub.tsx'
+import SemanaSantaDay from './pages/SemanaSantaDay.tsx'
 import ScoresList from './pages/ScoresList.tsx'
 import ScoreDetail from './pages/ScoreDetail.tsx'
 import AdminHub from './pages/AdminHub.tsx'
@@ -40,7 +42,7 @@ createRoot(document.getElementById('root')!).render(
                   <RequireAuth>
                     <ServicePage
                       title="Divina Liturgia"
-                      tag="service:divina-liturgia"
+                      tags={['service:divina-liturgia']}
                       description="Liturgia eucarística."
                       ordinaryOnly
                     />
@@ -53,7 +55,7 @@ createRoot(document.getElementById('root')!).render(
                   <RequireAuth>
                     <ServicePage
                       title="Vísperas Mayores"
-                      tag="service:visperas"
+                      tags={['service:visperas-mayores', 'service:visperas']}
                       description="Servicio vespertino."
                     />
                   </RequireAuth>
@@ -65,7 +67,7 @@ createRoot(document.getElementById('root')!).render(
                   <RequireAuth>
                     <ServicePage
                       title="Panikhida"
-                      tag="service:panikhida"
+                      tags={['service:panikhida']}
                       description="Servicio de conmemoración por los difuntos."
                     />
                   </RequireAuth>
@@ -77,7 +79,7 @@ createRoot(document.getElementById('root')!).render(
                   <RequireAuth>
                     <ServicePage
                       title="Matrimonio"
-                      tag="service:matrimonio"
+                      tags={['service:matrimonio']}
                       description="Sacramento del matrimonio."
                     />
                   </RequireAuth>
@@ -89,9 +91,25 @@ createRoot(document.getElementById('root')!).render(
                   <RequireAuth>
                     <ServicePage
                       title="Bautismo y Crismación"
-                      tag="service:bautismo"
+                      tags={['service:bautismo']}
                       description="Sacramentos de iniciación."
                     />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="biblioteca/semanasanta"
+                element={
+                  <RequireAuth>
+                    <SemanaSantaHub />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="biblioteca/semanasanta/:slug"
+                element={
+                  <RequireAuth>
+                    <SemanaSantaDay />
                   </RequireAuth>
                 }
               />
