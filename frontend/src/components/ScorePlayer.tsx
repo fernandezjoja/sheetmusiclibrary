@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlphaTabApi, NotationElement, PlayerMode, model, synth } from '@coderline/alphatab'
-import { mergeDirectionWords } from './alphaTabDirectionWords'
+import { mergeDirectionWords, spaceStackedTextLines } from './alphaTabDirectionWords'
 import { fitTimeSignaturesToContent, hideRewrittenTimeSignatures } from './alphaTabFreeTime'
 import { hideInvisibleNotes, patchHiddenNotes } from './alphaTabHiddenNotes'
 import { layOutRecitationLyrics } from './alphaTabLyrics'
@@ -200,11 +200,12 @@ export default function ScorePlayer({ url }: Props) {
     //   - lyrics upright, 15px (about the old OSMD player's size on desktop).
     //   - core.useWorkers false: render on the main thread so the
     //     renderer patches (alphaTabFreeTime.ts, alphaTabSlurDirection.ts,
-    //     alphaTabLyrics.ts, alphaTabHiddenNotes.ts, alphaTabSlashedNotes.ts)
-    //     apply.
+    //     alphaTabLyrics.ts, alphaTabHiddenNotes.ts, alphaTabSlashedNotes.ts,
+    //     alphaTabDirectionWords.ts) apply.
     hideRewrittenTimeSignatures()
     placeSlursByVoice()
     layOutRecitationLyrics()
+    spaceStackedTextLines()
     patchHiddenNotes()
     patchSlashedNotes()
     routeVoicesToChannels()
