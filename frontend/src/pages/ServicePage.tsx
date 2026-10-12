@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { ScoreListItem } from '../api'
-import { compareByOrder } from '../tags'
+import { compareByOrderIn } from '../tags'
 import ScoreListSkeleton from '../components/ScoreListSkeleton'
 import ScoreRow from '../components/ScoreRow'
 import { useScores } from '../scores'
@@ -57,7 +57,7 @@ export default function ServicePage({
   const items = scores
     .filter((s) => tags.some((tag) => s.tags.includes(tag)))
     .filter((s) => !ordinaryOnly || !changesWithTheDay(s))
-    .sort(compareByOrder)
+    .sort(compareByOrderIn(tags))
 
   if (items.length === 0) {
     return (

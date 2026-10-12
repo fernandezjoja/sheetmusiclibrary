@@ -3,8 +3,8 @@ import type { ScoreListItem } from '../api'
 import ScoreListSkeleton from '../components/ScoreListSkeleton'
 import ScoreRow from '../components/ScoreRow'
 import { useScores } from '../scores'
-import { HOLY_WEEK_DAYS, holyWeekContextTag } from '../semanaSanta'
-import { compareByOrder } from '../tags'
+import { HOLY_WEEK_DAYS, isInHolyWeekService, isOnHolyWeekDay } from '../semanaSanta'
+import { compareByOrderIn } from '../tags'
 import { usePageTitle } from '../usePageTitle'
 
 const backLink = (
@@ -41,16 +41,20 @@ export default function SemanaSantaDay() {
     )
   }
 
-  const contextTag = holyWeekContextTag(day)
-  const ofTheDay = scores.filter((s) => s.tags.includes(contextTag)).sort(compareByOrder)
+  const ofTheDay = scores.filter((s) => isOnHolyWeekDay(s, day))
 
-  // A score tagged with two of the day's services shows under both. One that
-  // matches none goes in a last group, so nothing tagged for the day is lost.
+  // A score sung in two of the day's services shows under both, at its own
+  // position in each. One that belongs to the day but to none of its services
+  // goes in a last group, so nothing tagged for the day is lost.
   const groups: { label: string; pieces: ScoreListItem[] }[] = day.services.map((service) => ({
     label: service.label,
-    pieces: ofTheDay.filter((s) => s.tags.includes(service.tag)),
+    pieces: ofTheDay
+      .filter((s) => isInHolyWeekService(s, day, service))
+      .sort(compareByOrderIn(service.tags)),
   }))
-  const unplaced = ofTheDay.filter((s) => !day.services.some((service) => s.tags.includes(service.tag)))
+  const unplaced = ofTheDay
+    .filter((s) => !day.services.some((service) => isInHolyWeekService(s, day, service)))
+    .sort(compareByOrderIn([]))
   if (unplaced.length > 0) groups.push({ label: 'Otras piezas', pieces: unplaced })
 
   return (
@@ -59,7 +63,7 @@ export default function SemanaSantaDay() {
 
       {ofTheDay.length === 0 && (
         <p style={{ color: 'var(--text)', fontStyle: 'italic' }}>
-          No hay piezas etiquetadas con <code>{contextTag}</code> todavía.
+          No hay piezas para este día todavía.
         </p>
       )}
 

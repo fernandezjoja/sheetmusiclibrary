@@ -2,7 +2,7 @@ import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import ScoreListSkeleton from '../components/ScoreListSkeleton'
 import { useScores } from '../scores'
-import { HOLY_WEEK_DAYS, holyWeekContextTag } from '../semanaSanta'
+import { HOLY_WEEK_DAYS, isOnHolyWeekDay } from '../semanaSanta'
 import { usePageTitle } from '../usePageTitle'
 
 const backLink = (
@@ -29,10 +29,7 @@ export default function SemanaSantaHub() {
     )
   }
 
-  const days = HOLY_WEEK_DAYS.filter((day) => {
-    const contextTag = holyWeekContextTag(day)
-    return scores.some((s) => s.tags.includes(contextTag))
-  })
+  const days = HOLY_WEEK_DAYS.filter((day) => scores.some((s) => isOnHolyWeekDay(s, day)))
 
   return (
     <article>

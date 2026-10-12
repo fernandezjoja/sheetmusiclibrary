@@ -1,3 +1,5 @@
+import { HOLY_WEEK_TAG_LABELS } from './semanaSanta'
+
 /**
  * Display-label map for namespaced tags.
  *
@@ -21,6 +23,9 @@
  *  - `order:N` → hidden (purely a sort key).
  */
 export const TAG_DISPLAY: Record<string, string> = {
+  // ---- service:ss-… (Holy Week services, defined in semanaSanta.ts) ------
+  ...HOLY_WEEK_TAG_LABELS,
+
   // ---- service: --------------------------------------------------------
   'service:acatisto': 'Acatisto',
   'service:bautismo': 'Bautismo',
