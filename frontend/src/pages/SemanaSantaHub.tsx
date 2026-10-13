@@ -40,7 +40,9 @@ export default function SemanaSantaHub() {
         </p>
       ) : (
         <p style={{ color: 'var(--text)', marginTop: -3, marginBottom: 24 }}>
-          Cada día con los servicios que se cantan ese día.
+          Referencias: las melodías fueron adaptadas para el texto en español
+          tomado de la Segunda Edición de los libros de Semana Santa, por la
+          Comisión de Textos Litúrgicos de la Diócesis de México (CODET), 2025.
         </p>
       )}
 

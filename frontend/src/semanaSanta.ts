@@ -154,7 +154,7 @@ export const HOLY_WEEK_DAYS: HolyWeekDay[] = [
       {
         tags: ['service:ss-maitines-sabado-santo'],
         genericTag: 'service:maitines',
-        label: 'Maitines del Sábado Santo (Lamentaciones)',
+        label: 'Maitines del Sábado Santo (Las Lamentaciones)',
       },
     ],
   },
@@ -181,7 +181,7 @@ export const HOLY_WEEK_DAYS: HolyWeekDay[] = [
       {
         tags: ['service:ss-liturgia-pascual'],
         genericTag: 'service:divina-liturgia',
-        label: 'Divina Liturgia',
+        label: 'Divina Liturgia Pascual',
       },
       {
         tags: ['service:ss-visperas-de-agape'],
