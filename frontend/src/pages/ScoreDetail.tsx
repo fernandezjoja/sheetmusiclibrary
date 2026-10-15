@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, type Score } from '../api'
-import { useAuth } from '../auth'
+import { useAuth } from '../useAuth'
 import { usePageTitle } from '../usePageTitle'
 import ScorePlayer from '../components/ScorePlayer'
 import YouTubeEmbed from '../components/YouTubeEmbed'
@@ -11,8 +11,8 @@ export default function ScoreDetail() {
   const { user } = useAuth()
   const [score, setScore] = useState<Score | null>(null)
   const [error, setError] = useState<{ message: string; status?: number } | null>(null)
-  // Bumping `playerKey` remounts <ScorePlayer> with a fresh OSMD instance +
-  // engine. Used by:
+  // Bumping `playerKey` remounts <ScorePlayer> with a fresh alphaTab
+  // instance. Used by:
   //   - the pageshow.persisted listener below (iOS bfcache restore: page
   //     came back from cache, our internal refs may point at stale DOM)
   //   - the manual "Recargar reproductor" link beneath the player
@@ -99,7 +99,7 @@ export default function ScoreDetail() {
           alignItems: 'center',
         }}
       >
-        {score.pdfPath && (
+        {score.hasPdf && (
           <a
             href={api.pdfUrl(score.id)}
             target="_blank"
@@ -132,23 +132,10 @@ export default function ScoreDetail() {
 
       {score.musicxmlPath ? (
         <>
-          <aside
-            role="note"
-            style={{
-              margin: '0 0 16px',
-              padding: '12px 16px',
-              background: '#fff8e6',
-              border: '1px solid #f5e6c8',
-              borderLeft: '4px solid #d8a93b',
-              borderRadius: 4,
-              color: '#5c4a1a',
-              fontSize: '0.9rem',
-            }}
-          >
-            <strong style={{ display: 'block', marginBottom: 6 }}>
-              Sobre el reproductor
-            </strong>
-            <ul style={{ margin: 0, paddingLeft: 20 }}>
+          {/* Collapsed by default; clicking the title row opens / folds it. */}
+          <details className="player-notice">
+            <summary>Acerca del reproductor</summary>
+            <ul style={{ margin: '0 16px', padding: '0 0 12px 20px' }}>
               <li style={{ marginBottom: 4 }}>
                 El motor de reproducción interpreta cada nota tal como se
                 muestra en la partitura. Cuando varios versos se cantan
@@ -170,7 +157,7 @@ export default function ScoreDetail() {
                 cualquier irregularidad — es una versión temprana.
               </li>
             </ul>
-          </aside>
+          </details>
           <ScorePlayer key={playerKey} url={api.musicxmlUrl(score.id)} />
           <p
             style={{

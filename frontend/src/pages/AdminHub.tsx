@@ -1,16 +1,8 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, type ScoreListItem } from '../api'
 import { usePageTitle } from '../usePageTitle'
 
 export default function AdminHub() {
   usePageTitle('Administración')
-  const [scores, setScores] = useState<ScoreListItem[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    api.listScores().then(setScores).catch((e: Error) => setError(e.message))
-  }, [])
 
   return (
     <article>
@@ -29,56 +21,13 @@ export default function AdminHub() {
       <section>
         <h3>Editar</h3>
         <p>Reemplazar archivos o actualizar los metadatos de una partitura existente.</p>
-
-        {error && <p role="alert">Error al cargar las partituras: {error}</p>}
-        {!scores && !error && <p>Cargando…</p>}
-        {scores && scores.length === 0 && (
-          <p style={{ color: 'var(--text)' }}>
-            No hay partituras todavía — sube una primero.
-          </p>
-        )}
-        {scores && scores.length > 0 && (
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {scores.map((s) => (
-              <li
-                key={s.id}
-                style={{
-                  padding: '8px 0',
-                  borderBottom: '1px solid var(--border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'baseline',
-                  gap: 12,
-                }}
-              >
-                <span>
-                  {s.title}
-                  {!s.published && (
-                    <span
-                      style={{
-                        marginLeft: 8,
-                        fontSize: '0.7em',
-                        fontWeight: 600,
-                        padding: '1px 6px',
-                        borderRadius: 3,
-                        background: '#f5e6c8',
-                        color: '#8a5a00',
-                        verticalAlign: 'middle',
-                      }}
-                      title="Versión de prueba — visible solo para usuarios autenticados"
-                    >
-                      PRUEBA
-                    </span>
-                  )}
-                  {s.composer && (
-                    <span style={{ marginLeft: 6 }}>— {s.composer}</span>
-                  )}
-                </span>
-                <Link to={`/admin/edit/${s.id}`}>Editar</Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* No score list here: loading it meant fetching every score on each
+            visit. Editing starts from the score's own page instead. */}
+        <p>
+          Abre la partitura desde la{' '}
+          <Link to="/biblioteca/todas">biblioteca</Link> y usa el botón
+          «Editar» de su página.
+        </p>
       </section>
     </article>
   )

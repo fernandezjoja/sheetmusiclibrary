@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import './App.css'
-import { useAuth } from './auth'
+import { useAuth } from './useAuth'
 
 function App() {
   const { user, loading, logout } = useAuth()

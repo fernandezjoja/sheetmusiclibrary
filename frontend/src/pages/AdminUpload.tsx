@@ -10,6 +10,7 @@ import {
 import AdminPendingRecordings from '../components/AdminPendingRecordings'
 import AdminPendingReferences from '../components/AdminPendingReferences'
 import TagReference from '../components/TagReference'
+import { useInvalidateScores } from '../scores'
 import { usePageTitle } from '../usePageTitle'
 
 const fieldStyle = {
@@ -30,6 +31,7 @@ const inputStyle = {
 
 export default function AdminUpload() {
   usePageTitle('Subir partitura')
+  const invalidateScores = useInvalidateScores()
   const [title, setTitle] = useState('')
   const [composer, setComposer] = useState('')
   const [tagsRaw, setTagsRaw] = useState('')
@@ -84,6 +86,7 @@ export default function AdminUpload() {
         recordings: pendingRecordings.length ? pendingRecordings : undefined,
         references: pendingReferences.length ? pendingReferences : undefined,
       })
+      invalidateScores()
       setResult(score)
       // Reset content fields. Keep `published` at its current setting so the
       // admin doesn't have to re-tick it for a batch of similar uploads.
@@ -117,24 +120,6 @@ export default function AdminUpload() {
   return (
     <article>
       <h2>Subir una partitura</h2>
-
-      {result && (
-        <div
-          role="status"
-          style={{
-            border: '1px solid var(--border)',
-            borderRadius: 4,
-            padding: 12,
-            marginBottom: 16,
-            background: 'var(--code-bg)',
-          }}
-        >
-          ✓ Subida <strong>{result.title}</strong>{' '}
-          {result.composer ? `por ${result.composer}` : ''}{' '}
-          {result.published ? '(publicada)' : '(prueba — solo admins)'} —{' '}
-          <Link to={`/scores/${result.id}`}>abrir</Link>.
-        </div>
-      )}
 
       {error && (
         <div
@@ -308,6 +293,24 @@ export default function AdminUpload() {
         >
           {submitting ? 'Subiendo…' : 'Subir'}
         </button>
+
+        {result && (
+          <div
+            role="status"
+            style={{
+              border: '1px solid var(--border)',
+              borderRadius: 4,
+              padding: 12,
+              marginTop: 16,
+              background: 'var(--code-bg)',
+            }}
+          >
+            ✓ Subida <strong>{result.title}</strong>{' '}
+            {result.composer ? `por ${result.composer}` : ''}{' '}
+            {result.published ? '(publicada)' : '(prueba — solo admins)'} —{' '}
+            <Link to={`/scores/${result.id}`}>abrir</Link>.
+          </div>
+        )}
       </form>
     </article>
   )

@@ -30,12 +30,12 @@ export type Score = {
   composer: string | null
   tags: string[]
   musicxmlPath: string | null
-  pdfPath: string | null
   /**
-   * True only when the score has a .mscz file *and* the requester has
-   * permission to download it (COLLABORATOR or higher). Server-set; the
-   * frontend just renders the download UI when this is true.
+   * `hasPdf` and `hasMscz` are true only when the score has that file *and*
+   * the requester has permission to download it (COLLABORATOR or higher).
+   * Server-set; the frontend just renders the download UI when true.
    */
+  hasPdf: boolean
   hasMscz: boolean
   published: boolean
   recordings: ScoreRecording[]
@@ -135,7 +135,7 @@ async function login(username: string, password: string): Promise<void> {
     body,
   })
   if (res.status === 200) return
-  if (res.status === 401) throw new ApiError('Invalid username or password', 401)
+  if (res.status === 401) throw new ApiError('Usuario o contraseña incorrectos', 401)
   throw new ApiError(`${res.status} ${res.statusText}`, res.status)
 }
 

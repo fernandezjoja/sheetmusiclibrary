@@ -54,6 +54,10 @@ public class ScoreController {
         return streamFile(scores.get(id, currentPerms().canSeeUnpublished()).getMusicxmlPath(), FileType.MUSICXML);
     }
 
+    /**
+     * Streams the PDF. Like {@link #getMscz}, the COLLABORATOR/ADMIN role gate
+     * lives in {@link com.sheetmusic.security.SecurityConfig}.
+     */
     @GetMapping("/{id}/pdf")
     public ResponseEntity<Resource> getPdf(@PathVariable Long id) {
         return streamFile(scores.get(id, currentPerms().canSeeUnpublished()).getPdfPath(), FileType.PDF);
@@ -64,7 +68,7 @@ public class ScoreController {
      * {@link com.sheetmusic.security.SecurityConfig} (matcher-level), so this
      * method only runs for an authorized caller. The published-or-not 404
      * still applies — anonymous never reaches here, but a logged-in
-     * COLLABORATOR/ADMIN gets the same visibility rules as PDF/MusicXML.
+     * COLLABORATOR/ADMIN gets the same visibility rules as MusicXML.
      */
     @GetMapping("/{id}/mscz")
     public ResponseEntity<Resource> getMscz(@PathVariable Long id) {

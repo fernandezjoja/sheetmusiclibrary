@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError, type Score } from '../api'
 import AdminRecordingsSection from '../components/AdminRecordingsSection'
 import AdminReferencesSection from '../components/AdminReferencesSection'
+import { useInvalidateScores } from '../scores'
 import { usePageTitle } from '../usePageTitle'
 
 const fieldStyle = {
@@ -24,9 +25,12 @@ const inputStyle = {
 export default function AdminEdit() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const invalidateScores = useInvalidateScores()
 
-  const [loadStatus, setLoadStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
-  const [loadError, setLoadError] = useState<string | null>(null)
+  // Outcome of the latest load, tagged with the request it answers. Until it
+  // matches the current id + refetchKey the page counts as loading (see
+  // loadStatus below), so there's no "loading" flag to reset by hand.
+  const [load, setLoad] = useState<{ id: string; key: number; error: string | null } | null>(null)
   // Full loaded score, kept fresh after each attachment mutation so the
   // sections re-render. Updated separately from the form-input state because
   // the form fields preserve user-in-progress edits independent of refetches.
@@ -54,8 +58,6 @@ export default function AdminEdit() {
 
   useEffect(() => {
     if (!id) return
-    setLoadStatus('loading')
-    setLoadError(null)
     api
       .getScore(id)
       .then((s) => {
@@ -68,15 +70,17 @@ export default function AdminEdit() {
           setTagsRaw(s.tags.join(', '))
           setPublished(s.published)
         }
-        setLoadStatus('loaded')
+        setLoad({ id, key: refetchKey, error: null })
       })
       .catch((e: unknown) => {
-        setLoadError(e instanceof Error ? e.message : String(e))
-        setLoadStatus('error')
+        setLoad({ id, key: refetchKey, error: e instanceof Error ? e.message : String(e) })
       })
-    // refetchKey is intentionally a dep — bumping it re-runs this effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // refetchKey is a dep so that bumping it re-runs this effect.
   }, [id, refetchKey])
+
+  const currentLoad = load !== null && load.id === id && load.key === refetchKey ? load : null
+  const loadStatus = currentLoad === null ? 'loading' : currentLoad.error !== null ? 'error' : 'loaded'
+  const loadError = currentLoad?.error ?? null
 
   const tags = tagsRaw
     .split(',')
@@ -111,6 +115,7 @@ export default function AdminEdit() {
         pdf,
         mscz,
       })
+      invalidateScores()
       setResult(score)
       // Reset just the file pickers; keep metadata fields populated for
       // further edits.
@@ -146,6 +151,7 @@ export default function AdminEdit() {
     setFieldErrors([])
     try {
       await api.deleteScore(id)
+      invalidateScores()
       navigate('/biblioteca/todas', { replace: true })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e))
@@ -168,24 +174,6 @@ export default function AdminEdit() {
   return (
     <article>
       <h2>Editar «{score?.title ?? `partitura #${id}`}»</h2>
-
-      {result && (
-        <div
-          role="status"
-          style={{
-            border: '1px solid var(--border)',
-            borderRadius: 4,
-            padding: 12,
-            marginBottom: 16,
-            background: 'var(--code-bg)',
-          }}
-        >
-          ✓ Actualizada <strong>{result.title}</strong>{' '}
-          {result.composer ? `por ${result.composer}` : ''}{' '}
-          {result.published ? '(publicada)' : '(prueba — solo admins)'} —{' '}
-          <Link to={`/scores/${result.id}`}>abrir</Link>.
-        </div>
-      )}
 
       {error && (
         <div
@@ -329,6 +317,24 @@ export default function AdminEdit() {
         >
           {submitting ? 'Guardando…' : 'Guardar cambios'}
         </button>
+
+        {result && (
+          <div
+            role="status"
+            style={{
+              border: '1px solid var(--border)',
+              borderRadius: 4,
+              padding: 12,
+              marginTop: 16,
+              background: 'var(--code-bg)',
+            }}
+          >
+            ✓ Actualizada <strong>{result.title}</strong>{' '}
+            {result.composer ? `por ${result.composer}` : ''}{' '}
+            {result.published ? '(publicada)' : '(prueba — solo admins)'} —{' '}
+            <Link to={`/scores/${result.id}`}>abrir</Link>.
+          </div>
+        )}
       </form>
 
       {score && (

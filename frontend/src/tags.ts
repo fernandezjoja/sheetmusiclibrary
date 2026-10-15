@@ -71,6 +71,43 @@ export function liturgicalRoleParts(score: Taggable): string[] {
   return parts
 }
 
+/**
+ * A score's position within one service. Two tag forms:
+ *
+ *   order:<service>:NNN   position in that service, e.g.
+ *                         `order:visperas-mayores:030`. <service> is the
+ *                         service tag without its `service:` prefix.
+ *   order:NNN             position wherever no scoped tag applies.
+ *
+ * The scoped form wins, so a piece sung in two services can sit at a
+ * different position in each. NNN is zero-padded by convention but parsed
+ * numerically. No usable tag sorts last.
+ */
+function orderOf(score: Taggable, serviceTags: string[]): number {
+  for (const serviceTag of serviceTags) {
+    const prefix = `order:${serviceTag.slice('service:'.length)}:`
+    const scoped = score.tags.find((t) => t.startsWith(prefix))
+    if (scoped && /^\d+$/.test(scoped.slice(prefix.length))) {
+      return parseInt(scoped.slice(prefix.length), 10)
+    }
+  }
+  const plain = score.tags.find((t) => /^order:\d+$/.test(t))
+  return plain ? parseInt(plain.slice('order:'.length), 10) : Number.POSITIVE_INFINITY
+}
+
+/**
+ * Comparator for the pieces of one service: by order tag (see orderOf), then
+ * by title. `serviceTags` are the `service:` tags of the service being shown.
+ */
+export function compareByOrderIn(serviceTags: string[]) {
+  return (a: Taggable & { title: string }, b: Taggable & { title: string }): number => {
+    const o = orderOf(a, serviceTags) - orderOf(b, serviceTags)
+    // Both unordered gives Infinity - Infinity = NaN, which falls through too.
+    if (o < 0 || o > 0) return o
+    return a.title.localeCompare(b.title, 'es')
+  }
+}
+
 /** Tags without a `prefix:` portion (legacy / un-namespaced). */
 export function freeFormTags(score: Taggable): string[] {
   return score.tags.filter((t) => !t.includes(':') && !isTagHidden(t))

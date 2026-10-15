@@ -1,9 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { alphaTab } from '@coderline/alphatab-vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  // alphaTab() serves/bundles alphaTab's music font, soundfont, and the
+  // audio worker/worklet the player needs.
+  plugins: [react(), alphaTab()],
+  // alphaTab's worker/worklet bundling fails under Vite 8's default 'iife'
+  // worker format; its code relies on import.meta.url, which needs ESM.
+  worker: { format: 'es' },
   server: {
     proxy: {
       // Proxy /api to the Spring Boot backend so the frontend can use
