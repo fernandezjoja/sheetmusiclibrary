@@ -4,6 +4,9 @@
      for destructive actions and errors. */
   --text: #55575d;
   --text-h: #1d1f24;
+  /* Item titles in lists (hub rows, piece titles): charcoal, a step softer
+     than --text-h, still clearly darker than the --text descriptions. */
+  --title: #2e3238;
   --bg: #f8f9fa;
   --border: #e1e4e7;
   --code-bg: #eceef1;
@@ -73,11 +76,11 @@ h1 {
   }
 }
 h2 {
-  font-size: 24px;
+  font-size: 32px;
   line-height: 118%;
   margin: 0 0 8px;
   @media (max-width: 1024px) {
-    font-size: 20px;
+    font-size: 26px;
   }
 }
 p {
@@ -185,7 +188,7 @@ code {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 14px;
+  padding: 16px 0;
   margin: 0;
   border-bottom: 1px solid var(--border);
   background: transparent;
@@ -203,40 +206,30 @@ code {
   text-underline-offset: 4px;
 }
 
-/* Variant for the card that stands apart from the category cards (the
-   "Todas las partituras" entry): a neutral gray one step darker than the
-   page. Not the accent tint, and not white. Hover lightens it a step. */
-.card-link-featured {
-  border-radius: 4px;
-  background: #eef0f2;
-  transition: background-color 0.15s;
-}
-.card-link-featured:hover {
-  background: #f4f5f7;
-}
-
-/* Short centered rule between two cards of the same group, to set the
-   following card apart. Use as <hr className="card-separator" />. */
+/* Extra space between two cards of the same group, to set the following
+   card apart. Use as <hr className="card-separator" />; it draws no line. */
 .card-separator {
-  width: 192px;
-  margin: 14px auto;
+  margin: 20px 0 0;
   border: 0;
-  border-top: 1px solid var(--gold);
 }
 
 /* Gold label over a group of cards ("Año Litúrgico"), with a rule under
-   it. Use on the group's heading element. Sized like the old group headings
-   (a browser-default h3): small caps read shorter than capitals, so it is a
-   step above 1.17em. */
+   it. Use on the group's heading element. Smaller than the page title (h2)
+   so the two don't compete. */
 .group-label {
   font-family: var(--heading);
-  font-size: 1.28rem;
+  font-size: 1.12rem;
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--gold);
-  margin: 28px 0 0;
-  padding: 0 14px 6px;
+  margin: 32px 0 0;
+  padding: 0 0 6px;
   border-bottom: 1px solid var(--border);
+}
+
+/* Plain "see all" link at the end of a hub. */
+.more-link {
+  font-weight: 500;
 }
 
 .card-link-body {
@@ -248,7 +241,7 @@ code {
   display: block;
   font-size: 1.1rem;
   font-weight: 500;
-  color: #2e3238;
+  color: var(--title);
   margin-bottom: 2px;
 }
 
@@ -309,11 +302,11 @@ code {
   align-items: baseline;
   gap: 12px;
 }
-/* Piece titles are near-black, not the link green: a page of green titles is
+/* Piece titles are charcoal, not the link green: a page of green titles is
    too much color. Hover matches the hub rows (gold underline). */
 .score-row-title {
   font-weight: 500;
-  color: var(--text-h);
+  color: var(--title);
 }
 .score-row-title:hover {
   text-decoration: underline;
@@ -372,4 +365,27 @@ code {
   .skeleton-bar {
     animation: none;
   }
+}
+
+/* Native file inputs: style the browser's button like .btn-secondary. Its
+   label text ("Choose File" / "Seleccionar archivo") follows the browser's
+   language and can't be set from CSS. */
+input[type='file'] {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+input[type='file']::file-selector-button {
+  font: inherit;
+  margin-right: 10px;
+  padding: 5px 12px;
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+input[type='file']::file-selector-button:hover {
+  background: var(--accent-bg);
 }

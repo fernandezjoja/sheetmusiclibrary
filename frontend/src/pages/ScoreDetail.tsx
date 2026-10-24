@@ -68,7 +68,7 @@ export default function ScoreDetail() {
     // page's last elements — recordings, references, back link — can scroll
     // out from underneath it instead of being permanently obscured.
     <article style={{ paddingBottom: 220 }}>
-      <h2 style={{ marginBottom: 4, textAlign: 'center' }}>
+      <h2 style={{ marginBottom: 4 }}>
         {score.title}
         {!score.published && (
           <span
@@ -164,7 +164,6 @@ export default function ScoreDetail() {
               marginTop: 12,
               fontSize: '0.85rem',
               color: 'var(--text)',
-              textAlign: 'right',
             }}
           >
             ¿El reproductor no responde?{' '}

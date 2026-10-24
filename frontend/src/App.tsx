@@ -17,7 +17,10 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <Link to="/" className="app-title">Kliros - Música Litúrgica Ortodoxa</Link>
+        <Link to="/" className="app-title">
+          <span className="app-title-name">Kliros</span>
+          <span className="app-title-desc">Música Litúrgica Ortodoxa</span>
+        </Link>
         <nav className="app-nav">
           <Link to="/biblioteca" className="app-nav-link">
             Biblioteca

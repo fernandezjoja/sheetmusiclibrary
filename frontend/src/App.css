@@ -14,20 +14,35 @@
 .app-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 16px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 16px;
   margin-bottom: 24px;
 }
 
+/* Wordmark: the short name, with the description under it in gray. The
+   logo goes before both later. */
 .app-title {
-  font-family: var(--heading);
-  font-size: 1.4rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  display: flex;
+  flex-direction: column;
   text-decoration: none;
+}
+.app-title:hover {
+  text-decoration: none;
+}
+.app-title-name {
+  font-family: var(--heading);
+  font-size: 1.6rem;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
   color: var(--heading-color);
+}
+.app-title-desc {
+  font-size: 0.85rem;
+  line-height: 1.3;
+  color: var(--text);
 }
 
 .app-nav {
@@ -82,11 +97,10 @@
    accordion, collapsed to its title row until clicked. */
 .player-notice {
   margin: 0 0 16px;
-  background: #f9f8f4;
-  border: 1px solid #e6e1d4;
-  border-left: 4px solid var(--gold);
+  background: #f1f3f5;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  color: #5c4a1a;
+  color: var(--text-h);
   font-size: 0.9rem;
 }
 
@@ -114,8 +128,8 @@
   width: 8px;
   height: 8px;
   margin: 0 4px 0 2px;
-  border-right: 2.5px solid var(--gold);
-  border-bottom: 2.5px solid var(--gold);
+  border-right: 2px solid var(--text);
+  border-bottom: 2px solid var(--text);
   transform: rotate(-45deg);
   transition: transform 150ms ease;
 }
@@ -125,6 +139,6 @@
 }
 
 .player-notice > summary:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--accent-border);
   outline-offset: -2px;
 }
