@@ -208,11 +208,18 @@ code {
   text-underline-offset: 4px;
 }
 
-/* Extra space between two cards of the same group, to set the following
-   card apart. Use as <hr className="card-separator" />; it draws no line. */
+/* Short, faint gold rule between two cards of the same group, to set the
+   following card apart. Use as <hr className="card-separator" />. */
+/* Centered between the gray bottom rule of the card above and a gray top
+   rule added to the card below. */
 .card-separator {
-  margin: 20px 0 0;
+  width: 240px;
+  margin: 18px auto;
   border: 0;
+  border-top: 1px solid rgba(169, 133, 58, 0.25);
+}
+.card-separator + .card-link {
+  border-top: 1px solid var(--border);
 }
 
 /* Gold label over a group of cards ("Año Litúrgico"), with a rule under
