@@ -91,8 +91,8 @@ export default function AdminPendingReferences({ pending, onAdd, onRemove, disab
                   disabled={disabled}
                   style={{
                     background: 'transparent',
-                    border: '1px solid #c44',
-                    color: '#c44',
+                    border: '1px solid var(--rubric)',
+                    color: 'var(--rubric)',
                     borderRadius: 3,
                     padding: '2px 8px',
                     cursor: 'pointer',

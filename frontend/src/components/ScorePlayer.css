@@ -1,8 +1,11 @@
-/* White "paper" behind the alphaTab render. alphaTab renders into the
-   inner div (its container), so the padding here stays out of its layout
-   width; see LAYOUT_WIDTH in ScorePlayer.tsx. */
+/* Warm white "paper" behind the alphaTab render, outlined so it reads as a
+   page on the page background. Close to white to keep the notes sharp and
+   the playing-bar highlight visible. alphaTab renders into the inner div (its
+   container), so the padding here stays out of its layout width; see
+   LAYOUT_WIDTH in ScorePlayer.tsx. */
 .score-inner {
-  background: #fff;
+  background: #fffdf8;
+  border: 1px solid var(--border);
   color: #000;
   padding: 16px;
   border-radius: 6px;
@@ -42,7 +45,9 @@
   stroke: #0078ff;
 }
 
-/* Floating playback dock — dark surface that pops against the light page. */
+/* Floating playback dock: warm charcoal so it stands out on the light page,
+   with off-white controls and a gold progress fill (palette in index.css).
+   The dock's own colors are set here as variables. */
 
 .score-dock {
   position: fixed;
@@ -57,15 +62,22 @@
   flex-direction: column;
   gap: 10px;
 
-  background: #2d2d30;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  --dock-bg: #2b2a27;
+  --dock-fg: #f1efe9;
+  --dock-fg-dim: rgba(241, 239, 233, 0.7);
+  --dock-line: #3d3b37;
+  --dock-hover: rgba(241, 239, 233, 0.08);
+  --dock-raised: rgba(241, 239, 233, 0.14);
+
+  background: var(--dock-bg);
+  border: 1px solid var(--dock-line);
+  border-radius: 10px;
   padding: 14px;
   box-shadow:
     0 12px 32px -12px rgba(0, 0, 0, 0.45),
     0 4px 12px -4px rgba(0, 0, 0, 0.2);
 
-  color: #cdd2db;
+  color: var(--dock-fg);
   font-size: 0.9rem;
 }
 
@@ -79,8 +91,8 @@
 .score-dock-spinner {
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #7aa3d3;
+  border: 2px solid var(--dock-line);
+  border-top-color: var(--gold);
   border-radius: 50%;
   animation: score-dock-spin 0.8s linear infinite;
 }
@@ -111,16 +123,16 @@
 }
 
 .score-dock-time {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
-  color: rgba(205, 210, 219, 0.75);
+  color: var(--dock-fg-dim);
   white-space: nowrap;
 }
 
 .score-dock-progress-track {
   position: relative;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  height: 5px;
+  background: var(--dock-line);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -128,7 +140,7 @@
 .score-dock-progress-fill {
   position: absolute;
   inset: 0;
-  background: #7aa3d3;
+  background: var(--gold);
   /* No width transition: alphaTab reports the position every few ms, and an
      animation only made the bar trail playback. */
 }
@@ -144,24 +156,25 @@
 }
 
 .score-dock-label {
-  color: rgba(205, 210, 219, 0.6);
-  font-size: 0.8rem;
-  letter-spacing: 0.02em;
+  color: var(--dock-fg-dim);
+  font-size: 0.85rem;
 }
 
-/* Transport buttons (previous measure / play-pause / stop / next measure) */
+/* Transport buttons (previous measure / play-pause / stop / next measure):
+   off-white icons with no fill. */
 
 .score-dock-transport {
   display: inline-flex;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
 }
 
 .score-dock-btn {
   appearance: none;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  color: #e3e6ed;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--dock-fg);
   padding: 6px 10px;
   font: inherit;
   font-size: 0.95rem;
@@ -169,16 +182,16 @@
   cursor: pointer;
   transition:
     background 100ms ease,
-    border-color 100ms ease;
+    border-color 100ms ease,
+    color 100ms ease;
 }
 
 .score-dock-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--dock-hover);
 }
 
 .score-dock-btn:focus-visible {
-  outline: 2px solid #7aa3d3;
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
@@ -187,12 +200,31 @@
   cursor: default;
 }
 
-/* Segmented control (sound mode) — Apple/Linear-style pill group */
+/* Play / pause: the main control, an off-white circle with a dark icon. */
+.score-dock-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 1.1rem;
+  background: var(--dock-fg);
+  border-color: var(--dock-fg);
+  color: var(--dock-bg);
+}
+
+.score-dock-btn-primary:hover:not(:disabled) {
+  background: #fff;
+  border-color: #fff;
+}
+
+/* Segmented control (semitone, sound mode) */
 
 .score-dock-segmented {
   display: inline-flex;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--dock-hover);
+  border: 1px solid var(--dock-line);
   border-radius: 8px;
   padding: 2px;
   gap: 2px;
@@ -202,7 +234,7 @@
   appearance: none;
   background: transparent;
   border: none;
-  color: rgba(205, 210, 219, 0.85);
+  color: var(--dock-fg-dim);
   padding: 4px 10px;
   border-radius: 6px;
   font: inherit;
@@ -214,17 +246,17 @@
 }
 
 .score-dock-segmented-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  background: var(--dock-hover);
+  color: var(--dock-fg);
 }
 
 .score-dock-segmented-btn[aria-pressed='true'] {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  background: var(--dock-raised);
+  color: var(--dock-fg);
 }
 
 .score-dock-segmented-btn:focus-visible {
-  outline: 2px solid #7aa3d3;
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
@@ -242,10 +274,11 @@
   text-align: center;
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
-  color: #fff;
+  color: var(--dock-fg);
 }
 
-/* Voice toggles — pill chips, filled when active, outlined when muted */
+/* Voice toggles: pill chips in small caps, filled with the voice color when
+   on, outlined in it when muted. */
 
 .score-dock-voices {
   display: flex;
@@ -257,16 +290,17 @@
 .score-dock-voice {
   /* Per-voice fill is set as a CSS custom property on the button (inline
      style); this default catches any non-SATB chip that doesn't get one. */
-  --voice-color: #7aa3d3;
+  --voice-color: var(--dock-fg);
 
   appearance: none;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1.5px solid var(--voice-color);
   border-radius: 999px;
-  color: #cdd2db;
+  color: var(--voice-color);
   padding: 3px 12px;
-  font: inherit;
-  font-size: 0.78rem;
+  font-family: var(--heading);
+  font-size: 0.85rem;
+  font-weight: 500;
   letter-spacing: 0.02em;
   cursor: pointer;
   transition:
@@ -275,30 +309,28 @@
     border-color 100ms ease;
 }
 
-.score-dock-voice:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
 .score-dock-voice[aria-pressed='true'] {
   background: var(--voice-color);
-  border-color: var(--voice-color);
   color: #fff;
-  font-weight: 500;
+}
+
+.score-dock-voice[aria-pressed='true']:hover {
+  filter: brightness(1.08);
 }
 
 .score-dock-voice[aria-pressed='false'] {
   text-decoration: line-through;
-  text-decoration-color: rgba(205, 210, 219, 0.5);
-  opacity: 0.7;
+}
+
+.score-dock-voice[aria-pressed='false']:hover {
+  background: var(--dock-hover);
 }
 
 /* Grey placeholder chips while the audio loads. */
 .score-dock-voice:disabled {
-  --voice-color: rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: rgba(205, 210, 219, 0.5);
+  --voice-color: var(--dock-line);
+  background: transparent;
+  color: rgba(241, 239, 233, 0.4);
   text-decoration: none;
   cursor: default;
 }
@@ -313,40 +345,29 @@
   outline-offset: 2px;
 }
 
-/* Play / pause: the main control, larger than the rest. */
-.score-dock-btn-primary {
-  font-size: 1.15rem;
-  padding: 8px 16px;
-  background: rgba(122, 163, 211, 0.22);
-  border-color: rgba(122, 163, 211, 0.4);
-}
-
-/* "⚙ Ajustes" toggle: bordered and labeled so it reads as a button. */
+/* "Ajustes" toggle: an off-white small-caps text link. */
 .score-dock-settings-toggle {
   appearance: none;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 8px;
-  color: #e3e6ed;
-  padding: 6px 14px;
-  font: inherit;
+  background: transparent;
+  border: none;
+  color: var(--dock-fg);
+  padding: 4px 8px;
+  font-family: var(--heading);
   font-size: 0.9rem;
+  letter-spacing: 0.02em;
   line-height: 1.2;
   cursor: pointer;
-  transition:
-    background 100ms ease,
-    border-color 100ms ease;
 }
 
 /* Same chevron as the "Acerca del reproductor" accordion (App.css): points
    right when closed, down when open. */
 .score-dock-settings-arrow {
   display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin: 0 2px 1px 8px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
+  width: 6px;
+  height: 6px;
+  margin: 0 2px 2px 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
   transform: rotate(-45deg);
   transition: transform 150ms ease;
 }
@@ -355,25 +376,19 @@
   transform: rotate(45deg);
 }
 
-.score-dock-settings-toggle:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.35);
-}
-
-.score-dock-settings-toggle[aria-expanded='true'] {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+.score-dock-settings-toggle:hover:not(:disabled) {
+  text-decoration: underline;
 }
 
 .score-dock-settings-toggle:focus-visible {
-  outline: 2px solid #7aa3d3;
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
 /* Collapsible settings (Semitono, Instrumento / Coro). */
 .score-dock-settings {
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--dock-line);
 }
 
 /* Long-pressing a voice chip solos it; keep mobile browsers from selecting

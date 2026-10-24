@@ -78,8 +78,8 @@ export default function ScoreDetail() {
               fontWeight: 600,
               padding: '2px 8px',
               borderRadius: 4,
-              background: '#f5e6c8',
-              color: '#8a5a00',
+              background: 'var(--badge-bg)',
+              color: 'var(--badge-text)',
               verticalAlign: 'middle',
             }}
             title="Versión de prueba — visible solo para usuarios autenticados"

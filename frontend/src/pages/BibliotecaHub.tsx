@@ -18,8 +18,6 @@ import { usePageTitle } from '../usePageTitle'
  * can still reach the pages directly via URL. The hub just keeps their view
  * focused on the public-facing categories.
  */
-const groupTitleStyle = { margin: '28px 0 8px' } as const
-
 // Where the Semana Santa y Pascua card goes. false: under Año Litúrgico.
 // true: in a "Semana Santa y Pascua" section of its own at the bottom, as it
 // was at first. Kept as a switch because the placement may be reverted.
@@ -48,7 +46,7 @@ export default function BibliotecaHub() {
         Explora por categoría.
       </p>
 
-      <h3 style={groupTitleStyle}>Año Litúrgico</h3>
+      <h3 className="group-label">Año Litúrgico</h3>
 
       <Link to="/biblioteca/octoechos" className="card-link">
         <span className="card-link-body">
@@ -74,7 +72,7 @@ export default function BibliotecaHub() {
 
       {isSignedIn && (
         <>
-          <h3 style={groupTitleStyle}>Servicios del Ciclo</h3>
+          <h3 className="group-label">Servicios del Ciclo</h3>
 
           <Link to="/biblioteca/divinaliturgia" className="card-link">
             <span className="card-link-body">
@@ -98,7 +96,7 @@ export default function BibliotecaHub() {
             <span className="card-link-arrow" aria-hidden="true">→</span>
           </Link>
 
-          <h3 style={groupTitleStyle}>Misterios y otros servicios</h3>
+          <h3 className="group-label">Misterios y otros servicios</h3>
 
           <Link to="/biblioteca/bautismo" className="card-link">
             <span className="card-link-body">
@@ -132,7 +130,7 @@ export default function BibliotecaHub() {
 
           {SEMANA_SANTA_AS_SECTION && (
             <>
-              <h3 style={groupTitleStyle}>Semana Santa y Pascua</h3>
+              <h3 className="group-label">Semana Santa y Pascua</h3>
               {semanaSantaCard}
             </>
           )}

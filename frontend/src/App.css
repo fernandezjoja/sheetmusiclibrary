@@ -22,10 +22,12 @@
 }
 
 .app-title {
+  font-family: var(--heading);
   font-size: 1.4rem;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   text-decoration: none;
-  color: var(--text-h);
+  color: var(--heading-color);
 }
 
 .app-nav {
@@ -67,13 +69,22 @@
   text-align: left;
 }
 
+.app-footer {
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
 /* "Acerca del reproductor" notice on the score page: a native <details>
    accordion, collapsed to its title row until clicked. */
 .player-notice {
   margin: 0 0 16px;
-  background: #fff8e6;
-  border: 1px solid #f5e6c8;
-  border-left: 4px solid #d8a93b;
+  background: #faf6ec;
+  border: 1px solid #ebe1c8;
+  border-left: 4px solid var(--gold);
   border-radius: 4px;
   color: #5c4a1a;
   font-size: 0.9rem;
@@ -103,8 +114,8 @@
   width: 8px;
   height: 8px;
   margin: 0 4px 0 2px;
-  border-right: 2.5px solid #b5872a;
-  border-bottom: 2.5px solid #b5872a;
+  border-right: 2.5px solid var(--gold);
+  border-bottom: 2.5px solid var(--gold);
   transform: rotate(-45deg);
   transition: transform 150ms ease;
 }
@@ -114,6 +125,6 @@
 }
 
 .player-notice > summary:focus-visible {
-  outline: 2px solid #d8a93b;
+  outline: 2px solid var(--gold);
   outline-offset: -2px;
 }

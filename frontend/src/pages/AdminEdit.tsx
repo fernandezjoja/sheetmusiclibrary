@@ -179,7 +179,7 @@ export default function AdminEdit() {
         <div
           role="alert"
           style={{
-            border: '1px solid #c44',
+            border: '1px solid var(--rubric)',
             borderRadius: 4,
             padding: 12,
             marginBottom: 16,
@@ -346,14 +346,14 @@ export default function AdminEdit() {
 
       <fieldset
         style={{
-          border: '1px solid #c44',
+          border: '1px solid var(--rubric)',
           borderRadius: 4,
           padding: 12,
           marginTop: 32,
           maxWidth: 560,
         }}
       >
-        <legend style={{ color: '#c44' }}>Zona peligrosa</legend>
+        <legend style={{ color: 'var(--rubric)' }}>Zona peligrosa</legend>
         <p style={{ margin: '0 0 12px', color: 'var(--text)', fontSize: '0.9rem' }}>
           Eliminar quita la partitura, sus archivos (MusicXML, PDF, .mscz), y
           todas las grabaciones, referencias y notas adjuntas. No se puede

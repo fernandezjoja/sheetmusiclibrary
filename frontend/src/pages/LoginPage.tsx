@@ -65,7 +65,7 @@ export default function LoginPage() {
         <div
           role="alert"
           style={{
-            border: '1px solid #c44',
+            border: '1px solid var(--rubric)',
             borderRadius: 4,
             padding: 12,
             marginBottom: 16,

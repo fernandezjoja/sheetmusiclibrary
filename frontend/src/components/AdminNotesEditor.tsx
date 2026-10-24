@@ -210,7 +210,7 @@ export default function AdminNotesEditor({ notes, onAdd, onUpdate, onDelete }: P
                     type="button"
                     onClick={() => handleDelete(n.id)}
                     disabled={busy}
-                    style={{ ...linkBtn, color: '#c44' }}
+                    style={{ ...linkBtn, color: 'var(--rubric)' }}
                     title="Eliminar nota"
                   >
                     ×
@@ -248,7 +248,7 @@ export default function AdminNotesEditor({ notes, onAdd, onUpdate, onDelete }: P
         </button>
       </form>
       {error && (
-        <p role="alert" style={{ color: '#c44', margin: '4px 0 0', fontSize: '0.85rem' }}>
+        <p role="alert" style={{ color: 'var(--rubric)', margin: '4px 0 0', fontSize: '0.85rem' }}>
           {error}
         </p>
       )}

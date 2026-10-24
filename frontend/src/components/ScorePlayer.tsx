@@ -486,7 +486,19 @@ export default function ScorePlayer({ url }: Props) {
       aria-label={playing ? 'Pausa' : 'Reproducir'}
       title={playing ? 'Pausa (espacio)' : 'Reproducir (espacio)'}
     >
-      {playing ? '⏸' : '▶'}
+      {/* SVG, not the ⏸ / ▶ characters: a font glyph sits on the text
+          baseline and doesn't center in the circle. The triangle is drawn a
+          little right of the box center so it looks centered. */}
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+        {playing ? (
+          <>
+            <rect x="3" y="2" width="3.5" height="12" rx="1" />
+            <rect x="9.5" y="2" width="3.5" height="12" rx="1" />
+          </>
+        ) : (
+          <path d="M4.5 2.2v11.6c0 .8.9 1.3 1.6.8l8.6-5.8c.6-.4.6-1.2 0-1.6L6.1 1.4c-.7-.5-1.6 0-1.6.8z" />
+        )}
+      </svg>
     </button>
   )
 
@@ -603,8 +615,8 @@ export default function ScorePlayer({ url }: Props) {
             </div>
           )}
 
-          {/* Icon plus text label, in its own row right above the panel it
-              opens: clearer than a bare gear icon for less technical users. */}
+          {/* Text label in its own row right above the panel it opens:
+              clearer than a bare gear icon for less technical users. */}
           <div className="score-dock-row">
             <button
               type="button"
@@ -614,7 +626,7 @@ export default function ScorePlayer({ url }: Props) {
               aria-expanded={settingsOpen}
               aria-controls="score-dock-settings"
             >
-              <span aria-hidden="true">⚙</span> Ajustes{' '}
+              Ajustes
               <span className="score-dock-settings-arrow" aria-hidden="true" />
             </button>
           </div>

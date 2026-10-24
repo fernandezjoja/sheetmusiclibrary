@@ -1,25 +1,29 @@
 :root {
-  /* Modern soft-gray palette: cool off-white background, slate text,
-     azurite blue accent. Mirrors what GitHub / Linear / modern dashboards
-     use — slight cool tint, easy on the eyes, never harsh. */
-  --text: #4a5260;
-  --text-h: #1a1f2a;
-  --bg: #f4f5f7;
-  --border: #dde0e5;
-  --code-bg: #eaecef;
-  --accent: #3a5474;
-  --accent-bg: rgba(58, 84, 116, 0.08);
-  --accent-border: rgba(58, 84, 116, 0.4);
-  --social-bg: rgba(234, 236, 239, 0.5);
+  /* Liturgical-book palette, after ferrmaz.com/oracion: warm off-white page,
+     near-black text, navy headings and links, gold for section labels and
+     rules, red for rubrics (initials, secondary actions). */
+  --text: #55575d;
+  --text-h: #1d1f24;
+  --bg: #fbfbf9;
+  --border: #e2dfd6;
+  --code-bg: #efede7;
+  --accent: #1e3769;
+  --accent-bg: rgba(30, 55, 105, 0.07);
+  --accent-border: rgba(30, 55, 105, 0.35);
+  --heading-color: #1e3769;
+  --gold: #a9853a;
+  --rubric: #a4231f;
+  --badge-bg: #f1e7cf;
+  --badge-text: #7a5a1c;
+  --social-bg: rgba(239, 237, 231, 0.5);
   --shadow:
-    rgba(15, 23, 42, 0.08) 0 10px 15px -3px, rgba(15, 23, 42, 0.04) 0 4px 6px -2px;
+    rgba(29, 31, 36, 0.08) 0 10px 15px -3px, rgba(29, 31, 36, 0.04) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: Alegreya, 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --heading: 'Alegreya SC', Alegreya, Georgia, serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
+  font: 19px/150% var(--sans);
   color-scheme: light;
   color: var(--text);
   background: var(--bg);
@@ -29,7 +33,7 @@
   -moz-osx-font-smoothing: grayscale;
 
   @media (max-width: 1024px) {
-    font-size: 16px;
+    font-size: 17px;
   }
 }
 
@@ -51,15 +55,16 @@ body {
 }
 
 h1,
-h2 {
+h2,
+h3 {
   font-family: var(--heading);
   font-weight: 500;
-  color: var(--text-h);
+  color: var(--heading-color);
+  letter-spacing: 0.01em;
 }
 
 h1 {
   font-size: 56px;
-  letter-spacing: -1.68px;
   margin: 32px 0;
   @media (max-width: 1024px) {
     font-size: 36px;
@@ -69,7 +74,6 @@ h1 {
 h2 {
   font-size: 24px;
   line-height: 118%;
-  letter-spacing: -0.24px;
   margin: 0 0 8px;
   @media (max-width: 1024px) {
     font-size: 20px;
@@ -123,8 +127,8 @@ code {
   border-color: var(--accent);
 }
 .btn-primary:hover:not(:disabled) {
-  background: #2e4361;
-  border-color: #2e4361;
+  background: #16294f;
+  border-color: #16294f;
   text-decoration: none;
 }
 .btn-primary:disabled {
@@ -150,18 +154,18 @@ code {
 }
 
 .btn-danger {
-  background: #c44;
+  background: var(--rubric);
   color: #fff;
-  border-color: #c44;
+  border-color: var(--rubric);
 }
 .btn-danger:hover:not(:disabled) {
-  background: #a33;
-  border-color: #a33;
+  background: #861c19;
+  border-color: #861c19;
   text-decoration: none;
 }
 .btn-danger:disabled {
-  background: #d99;
-  border-color: #d99;
+  background: #d3a7a5;
+  border-color: #d3a7a5;
   cursor: not-allowed;
 }
 
@@ -180,27 +184,30 @@ code {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 14px 16px;
-  margin: 0 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  padding: 16px 14px;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
   background: transparent;
   color: var(--text-h);
   text-decoration: none;
-  transition: background-color 0.15s, border-color 0.15s;
 }
 .card-link:hover {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
   text-decoration: none;
+}
+.card-link:hover .card-link-title {
+  color: var(--accent);
 }
 
 /* Variant for the card that stands apart from the category cards (the
    "Todas las partituras" entry): a neutral gray one step darker than the
-   page. Not the accent tint, which reads as hovered, and not white. Hover is
-   the regular .card-link:hover. */
-.card-link-featured:not(:hover) {
-  background: #eceef1;
+   page. Not the accent tint, and not white. Hover lightens it a step. */
+.card-link-featured {
+  border-radius: 4px;
+  background: #f1efe9;
+  transition: background-color 0.15s;
+}
+.card-link-featured:hover {
+  background: #f6f4ef;
 }
 
 /* Short centered rule between two cards of the same group, to set the
@@ -209,7 +216,20 @@ code {
   width: 192px;
   margin: 14px auto;
   border: 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--gold);
+}
+
+/* Small gold label over a group of cards ("Año Litúrgico"), with a rule
+   under it. Use on the group's heading element. */
+.group-label {
+  font-family: var(--heading);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  margin: 28px 0 0;
+  padding: 0 14px 6px;
+  border-bottom: 1px solid var(--border);
 }
 
 .card-link-body {
@@ -217,11 +237,19 @@ code {
   min-width: 0;
 }
 
+/* Title in small caps with a red initial, like a rubric. */
 .card-link-title {
   display: block;
-  font-weight: 600;
+  font-family: var(--heading);
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   color: var(--text-h);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  transition: color 0.15s;
+}
+.card-link-title::first-letter {
+  color: var(--rubric);
 }
 
 .card-link-desc {
@@ -231,16 +259,9 @@ code {
   line-height: 1.4;
 }
 
+/* Kept in the markup; the row style shows no arrow. */
 .card-link-arrow {
-  flex-shrink: 0;
-  color: var(--text);
-  font-size: 1.2rem;
-  line-height: 1;
-  transition: transform 0.15s, color 0.15s;
-}
-.card-link:hover .card-link-arrow {
-  color: var(--accent);
-  transform: translateX(2px);
+  display: none;
 }
 
 /* Search field for list pages. Shares the card-link shape (1px border, 6px
@@ -253,9 +274,9 @@ code {
   font: inherit;
   color: var(--text-h);
   background: #fff
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a919c' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.6-3.6'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238c8a83' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.6-3.6'/%3E%3C/svg%3E")
     no-repeat 12px center / 17px;
-  border: 1px solid #c9ced6;
+  border: 1px solid #d6d2c6;
   border-radius: 6px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -297,8 +318,8 @@ code {
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 3px;
-  background: #f5e6c8;
-  color: #8a5a00;
+  background: var(--badge-bg);
+  color: var(--badge-text);
   vertical-align: middle;
 }
 .score-row-attribution {
