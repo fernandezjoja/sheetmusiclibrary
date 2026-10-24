@@ -90,7 +90,7 @@ export default function GrandesFiestas() {
       <h2>Grandes Fiestas</h2>
       <p style={{ color: 'var(--text)' }}>
         Las Doce Grandes Fiestas, en orden del año litúrgico (1 = Natividad de
-        la Theotokos, 12 = Dormición) y Pascua al final como Fiesta de
+        la Theotokos, 12 = Dormición) y Pascua al final como Fiesta de las
         Fiestas.
       </p>
 
