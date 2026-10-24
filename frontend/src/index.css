@@ -1,18 +1,21 @@
 :root {
   /* Liturgical-book palette, after ferrmaz.com/oracion: warm off-white page,
-     near-black text, navy headings and links, gold for section labels and
-     rules, red for rubrics (initials, secondary actions). */
+     near-black text, the logo's green for headings and links, gold for
+     section labels and rules, a deep oxblood red for rubrics (initials,
+     destructive actions). The red is kept dark and brownish so it doesn't
+     read as Christmas colors next to the green. */
   --text: #55575d;
   --text-h: #1d1f24;
   --bg: #fbfbf9;
   --border: #e2dfd6;
   --code-bg: #efede7;
-  --accent: #1e3769;
-  --accent-bg: rgba(30, 55, 105, 0.07);
-  --accent-border: rgba(30, 55, 105, 0.35);
-  --heading-color: #1e3769;
+  --accent: #125a3d;
+  --accent-hover: #0c4029;
+  --accent-bg: rgba(18, 90, 61, 0.07);
+  --accent-border: rgba(18, 90, 61, 0.35);
+  --heading-color: #125a3d;
   --gold: #a9853a;
-  --rubric: #a4231f;
+  --rubric: #962b21;
   --badge-bg: #f1e7cf;
   --badge-text: #7a5a1c;
   --social-bg: rgba(239, 237, 231, 0.5);
@@ -127,8 +130,8 @@ code {
   border-color: var(--accent);
 }
 .btn-primary:hover:not(:disabled) {
-  background: #16294f;
-  border-color: #16294f;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
   text-decoration: none;
 }
 .btn-primary:disabled {
@@ -159,8 +162,8 @@ code {
   border-color: var(--rubric);
 }
 .btn-danger:hover:not(:disabled) {
-  background: #861c19;
-  border-color: #861c19;
+  background: #7a2219;
+  border-color: #7a2219;
   text-decoration: none;
 }
 .btn-danger:disabled {
@@ -194,8 +197,13 @@ code {
 .card-link:hover {
   text-decoration: none;
 }
+/* Hover underlines the title in gold instead of turning it green, so the
+   red initial never sits on a green word. */
 .card-link:hover .card-link-title {
-  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
 
 /* Variant for the card that stands apart from the category cards (the
@@ -219,13 +227,15 @@ code {
   border-top: 1px solid var(--gold);
 }
 
-/* Small gold label over a group of cards ("Año Litúrgico"), with a rule
-   under it. Use on the group's heading element. */
+/* Gold label over a group of cards ("Año Litúrgico"), with a rule under
+   it. Use on the group's heading element. Sized like the old group headings
+   (a browser-default h3): small caps read shorter than capitals, so it is a
+   step above 1.17em. */
 .group-label {
   font-family: var(--heading);
-  font-size: 0.8rem;
+  font-size: 1.28rem;
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   color: var(--gold);
   margin: 28px 0 0;
   padding: 0 14px 6px;
@@ -309,8 +319,17 @@ code {
   align-items: baseline;
   gap: 12px;
 }
+/* Piece titles are near-black, not the link green: a page of green titles is
+   too much color. Hover matches the hub rows (gold underline). */
 .score-row-title {
   font-weight: 500;
+  color: var(--text-h);
+}
+.score-row-title:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
 .score-row-badge {
   margin-left: 8px;
