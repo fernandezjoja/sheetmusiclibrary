@@ -1,10 +1,9 @@
-/* Warm white "paper" behind the alphaTab render, outlined so it reads as a
-   page on the page background. Close to white to keep the notes sharp and
-   the playing-bar highlight visible. alphaTab renders into the inner div (its
+/* White "paper" behind the alphaTab render, outlined so it reads as a page
+   on the gray page background. alphaTab renders into the inner div (its
    container), so the padding here stays out of its layout width; see
    LAYOUT_WIDTH in ScorePlayer.tsx. */
 .score-inner {
-  background: #fffdf8;
+  background: #fff;
   border: 1px solid var(--border);
   color: #000;
   padding: 16px;
@@ -45,7 +44,7 @@
   stroke: #0078ff;
 }
 
-/* Floating playback dock: warm charcoal so it stands out on the light page,
+/* Floating playback dock: neutral charcoal so it stands out on the light page,
    with off-white controls and a gold progress fill (palette in index.css).
    The dock's own colors are set here as variables. */
 
@@ -62,12 +61,12 @@
   flex-direction: column;
   gap: 10px;
 
-  --dock-bg: #2b2a27;
-  --dock-fg: #f1efe9;
-  --dock-fg-dim: rgba(241, 239, 233, 0.7);
-  --dock-line: #3d3b37;
-  --dock-hover: rgba(241, 239, 233, 0.08);
-  --dock-raised: rgba(241, 239, 233, 0.14);
+  --dock-bg: #26282b;
+  --dock-fg: #f0f0f0;
+  --dock-fg-dim: rgba(240, 240, 240, 0.7);
+  --dock-line: #3a3d42;
+  --dock-hover: rgba(240, 240, 240, 0.08);
+  --dock-raised: rgba(240, 240, 240, 0.14);
 
   background: var(--dock-bg);
   border: 1px solid var(--dock-line);
@@ -330,7 +329,7 @@
 .score-dock-voice:disabled {
   --voice-color: var(--dock-line);
   background: transparent;
-  color: rgba(241, 239, 233, 0.4);
+  color: rgba(240, 240, 240, 0.4);
   text-decoration: none;
   cursor: default;
 }

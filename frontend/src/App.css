@@ -82,8 +82,8 @@
    accordion, collapsed to its title row until clicked. */
 .player-notice {
   margin: 0 0 16px;
-  background: #faf6ec;
-  border: 1px solid #ebe1c8;
+  background: #f9f8f4;
+  border: 1px solid #e6e1d4;
   border-left: 4px solid var(--gold);
   border-radius: 4px;
   color: #5c4a1a;

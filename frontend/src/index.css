@@ -1,14 +1,12 @@
 :root {
-  /* Liturgical-book palette, after ferrmaz.com/oracion: warm off-white page,
-     near-black text, the logo's green for headings and links, gold for
-     section labels and rules, a deep oxblood red for rubrics (initials,
-     destructive actions). The red is kept dark and brownish so it doesn't
-     read as Christmas colors next to the green. */
+  /* Neutral, cool-gray page with near-black text; the logo's green for
+     headings and links; gold for group labels and rules; a deep oxblood red
+     for destructive actions and errors. */
   --text: #55575d;
   --text-h: #1d1f24;
-  --bg: #fbfbf9;
-  --border: #e2dfd6;
-  --code-bg: #efede7;
+  --bg: #f8f9fa;
+  --border: #e1e4e7;
+  --code-bg: #eceef1;
   --accent: #125a3d;
   --accent-hover: #0c4029;
   --accent-bg: rgba(18, 90, 61, 0.07);
@@ -18,7 +16,7 @@
   --rubric: #962b21;
   --badge-bg: #f1e7cf;
   --badge-text: #7a5a1c;
-  --social-bg: rgba(239, 237, 231, 0.5);
+  --social-bg: rgba(236, 238, 241, 0.5);
   --shadow:
     rgba(29, 31, 36, 0.08) 0 10px 15px -3px, rgba(29, 31, 36, 0.04) 0 4px 6px -2px;
 
@@ -197,8 +195,7 @@ code {
 .card-link:hover {
   text-decoration: none;
 }
-/* Hover underlines the title in gold instead of turning it green, so the
-   red initial never sits on a green word. */
+/* Hover underlines the title in gold. */
 .card-link:hover .card-link-title {
   text-decoration: underline;
   text-decoration-color: var(--gold);
@@ -211,11 +208,11 @@ code {
    page. Not the accent tint, and not white. Hover lightens it a step. */
 .card-link-featured {
   border-radius: 4px;
-  background: #f1efe9;
+  background: #eef0f2;
   transition: background-color 0.15s;
 }
 .card-link-featured:hover {
-  background: #f6f4ef;
+  background: #f4f5f7;
 }
 
 /* Short centered rule between two cards of the same group, to set the
@@ -247,19 +244,12 @@ code {
   min-width: 0;
 }
 
-/* Title in small caps with a red initial, like a rubric. */
 .card-link-title {
   display: block;
-  font-family: var(--heading);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 500;
-  letter-spacing: 0.01em;
-  color: var(--text-h);
+  color: #2e3238;
   margin-bottom: 2px;
-  transition: color 0.15s;
-}
-.card-link-title::first-letter {
-  color: var(--rubric);
 }
 
 .card-link-desc {
@@ -284,9 +274,9 @@ code {
   font: inherit;
   color: var(--text-h);
   background: #fff
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238c8a83' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.6-3.6'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23878d95' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.6-3.6'/%3E%3C/svg%3E")
     no-repeat 12px center / 17px;
-  border: 1px solid #d6d2c6;
+  border: 1px solid #d3d7dc;
   border-radius: 6px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
