@@ -16,6 +16,8 @@
   --accent-border: rgba(18, 90, 61, 0.35);
   --heading-color: #125a3d;
   --gold: #a9853a;
+  /* Gold of the Kliros logo lettering, sampled from the logo image. */
+  --logo-gold: #a88b4f;
   --rubric: #962b21;
   --badge-bg: #f1e7cf;
   --badge-text: #7a5a1c;
