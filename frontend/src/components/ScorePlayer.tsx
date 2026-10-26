@@ -124,10 +124,24 @@ function formatTime(ms: number): string {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 }
 
+// Voice names a part may carry, mapped to the SATB_VOICES color they get.
+const VOICE_NAME_COLORS: [RegExp, string][] = [
+  [/^sopran/i, SATB_VOICES[0].color],
+  [/^alt/i, SATB_VOICES[1].color],
+  [/^tenor/i, SATB_VOICES[2].color],
+  [/^(bajo|bass|bar[ií]tono)/i, SATB_VOICES[3].color],
+]
+
+function colorForName(name: string): string | undefined {
+  return VOICE_NAME_COLORS.find(([re]) => re.test(name))?.[1]
+}
+
 function buildVoiceInfos(channels: VoiceChannel[]): VoiceInfo[] {
   if (channels.length === 4) {
     return channels.map((c, i) => ({ ...SATB_VOICES[i], muted: false, channel: c.channel }))
   }
+  // Other voice counts are labeled by part name; a part named after a voice
+  // (e.g. "Soprano" in a one-voice psalm) still gets that voice's color.
   return channels.map((c) => {
     const name = c.track.name?.trim() || `Pista ${c.track.index + 1}`
     const shared = channels.filter((o) => o.track === c.track).length > 1
@@ -135,6 +149,7 @@ function buildVoiceInfos(channels: VoiceChannel[]): VoiceInfo[] {
       label: shared ? `${name} voz ${c.voiceIndex + 1}` : name,
       muted: false,
       channel: c.channel,
+      color: colorForName(name),
     }
   })
 }

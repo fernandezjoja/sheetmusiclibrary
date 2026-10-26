@@ -289,7 +289,7 @@
 .score-dock-voice {
   /* Per-voice fill is set as a CSS custom property on the button (inline
      style); this default catches any non-SATB chip that doesn't get one. */
-  --voice-color: var(--dock-fg);
+  --voice-color: #6b7079;
 
   appearance: none;
   background: transparent;
