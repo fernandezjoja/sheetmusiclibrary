@@ -45,7 +45,7 @@
 }
 
 /* Floating playback dock: neutral charcoal so it stands out on the light page,
-   with off-white controls and a gold progress fill (palette in index.css).
+   with off-white controls and progress fill.
    The dock's own colors are set here as variables. */
 
 .score-dock {
@@ -91,7 +91,7 @@
   width: 12px;
   height: 12px;
   border: 2px solid var(--dock-line);
-  border-top-color: var(--gold);
+  border-top-color: var(--dock-fg);
   border-radius: 50%;
   animation: score-dock-spin 0.8s linear infinite;
 }
@@ -139,7 +139,7 @@
 .score-dock-progress-fill {
   position: absolute;
   inset: 0;
-  background: var(--gold);
+  background: var(--dock-fg);
   /* No width transition: alphaTab reports the position every few ms, and an
      animation only made the bar trail playback. */
 }
@@ -190,7 +190,7 @@
 }
 
 .score-dock-btn:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--dock-fg);
   outline-offset: 2px;
 }
 
@@ -255,7 +255,7 @@
 }
 
 .score-dock-segmented-btn:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--dock-fg);
   outline-offset: 2px;
 }
 
@@ -380,7 +380,7 @@
 }
 
 .score-dock-settings-toggle:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--dock-fg);
   outline-offset: 2px;
 }
 
