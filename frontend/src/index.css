@@ -25,8 +25,6 @@
 
   --sans: Alegreya, 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   --heading: 'Alegreya SC', Alegreya, Georgia, serif;
-  /* The KLIROS name in the header only. Too thin for headings or text. */
-  --wordmark: 'Cormorant SC', 'Alegreya SC', Alegreya, Georgia, serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 19px/150% var(--sans);
