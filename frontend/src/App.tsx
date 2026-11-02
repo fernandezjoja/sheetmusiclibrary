@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import './App.css'
+import logoSymbol from './assets/logo-symbol.svg'
 import { useAuth } from './useAuth'
 
 // Footer is hidden for now. Set to true to show it.
@@ -18,8 +19,11 @@ function App() {
     <div className="app">
       <header className="app-header">
         <Link to="/" className="app-title">
-          <span className="app-title-name">Kliros</span>
-          <span className="app-title-desc">Música Litúrgica Ortodoxa</span>
+          <img src={logoSymbol} alt="" className="app-title-logo" />
+          <span className="app-title-text">
+            <span className="app-title-name">Kliros</span>
+            <span className="app-title-desc">Música Litúrgica Ortodoxa</span>
+          </span>
         </Link>
         <nav className="app-nav">
           <Link to="/biblioteca" className="app-nav-link">
