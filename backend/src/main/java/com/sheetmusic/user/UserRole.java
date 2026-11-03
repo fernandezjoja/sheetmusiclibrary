@@ -1,30 +1,18 @@
 package com.sheetmusic.user;
 
 /**
- * User roles, ordered by capability via the {@link #rank} field. Comparisons
- * use {@link #atLeast(UserRole)} rather than {@link Enum#ordinal()} — explicit
- * ranks (with gaps) let intermediate roles slot in later without renumbering
- * existing rows.
+ * User roles. They are not ranked: CORO can download PDFs and PRUEBA can't,
+ * while PRUEBA sees unpublished scores and CORO doesn't. Each role's
+ * capabilities are listed explicitly in
+ * {@link com.sheetmusic.security.Permissions#from}.
  */
 public enum UserRole {
-    /** Browse all scores including unpublished test versions; no references, no PDF, no .mscz, no admin. */
-    USER(10),
-    /** USER + see references (with their notes) and download PDFs and .mscz archives. */
-    COLLABORATOR(20),
+    /** Local choir director: published scores, playback, recordings, PDF download. */
+    CORO,
+    /** Learns parts from test versions: published and unpublished scores, playback, recordings. No downloads. */
+    PRUEBA,
+    /** Music department member: everything except admin (unpublished, PDF, references, .mscz). */
+    DEPARTAMENTO,
     /** Full access: browse, upload, edit, delete, manage users. */
-    ADMIN(30);
-
-    private final int rank;
-
-    UserRole(int rank) {
-        this.rank = rank;
-    }
-
-    public int rank() {
-        return rank;
-    }
-
-    public boolean atLeast(UserRole other) {
-        return this.rank >= other.rank;
-    }
+    ADMIN
 }

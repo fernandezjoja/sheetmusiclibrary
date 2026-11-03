@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { api, type CurrentUser } from './api'
+import { api, type CurrentUser, type UserRole } from './api'
 import { AuthContext, useAuth } from './useAuth'
 
 export type { CurrentUser }
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 /**
  * Wraps a route that requires authentication. When `role` is provided, also
- * checks that the user has at least that role (USER or ADMIN). Redirects
+ * checks that the user has exactly that role (roles are not ranked). Redirects
  * unauthenticated users to /login (preserving where they came from), and
  * sends already-authenticated-but-wrong-role users to the home page.
  */
@@ -48,7 +48,7 @@ export function RequireAuth({
   role,
 }: {
   children: ReactNode
-  role?: 'USER' | 'ADMIN'
+  role?: UserRole
 }) {
   const { user, loading } = useAuth()
   const location = useLocation()
@@ -57,7 +57,7 @@ export function RequireAuth({
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
-  if (role === 'ADMIN' && user.role !== 'ADMIN') {
+  if (role && user.role !== role) {
     return <Navigate to="/" replace />
   }
   return <>{children}</>

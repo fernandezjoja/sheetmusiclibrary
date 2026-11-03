@@ -57,7 +57,7 @@ public class ScoreService {
     }
 
     /**
-     * Anonymous viewers get a 404 (via ScoreNotFoundException) for unpublished
+     * Roles without canSeeUnpublished get a 404 (via ScoreNotFoundException) for unpublished
      * scores — same response as a non-existent id, so existence isn't leaked.
      */
     @Transactional(readOnly = true)

@@ -1,13 +1,7 @@
-import { Link } from 'react-router-dom'
 import { usePageTitle } from '../usePageTitle'
 
+/** Public landing page. Content to be added. */
 export default function Home() {
   usePageTitle()
-  return (
-    <article>
-      <p>
-        <Link to="/biblioteca">→ Ir a la biblioteca</Link>
-      </p>
-    </article>
-  )
+  return <article />
 }

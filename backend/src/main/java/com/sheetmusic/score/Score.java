@@ -51,7 +51,7 @@ public class Score {
 
     /**
      * False = test/draft (visible only to logged-in users).
-     * True  = official (visible to anonymous visitors).
+     * True  = official (visible to every logged-in role).
      * Defaults to false on insert via the V3 migration's column default.
      */
     @Column(nullable = false)

@@ -23,11 +23,11 @@ public class AuthController {
         if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
             return ResponseEntity.status(401).build();
         }
-        // Strip Spring's "ROLE_" prefix; the SPA only cares about USER / ADMIN.
+        // Strip Spring's "ROLE_" prefix; the SPA gets CORO / PRUEBA / DEPARTAMENTO / ADMIN.
         String role = auth.getAuthorities().stream()
                 .findFirst()
                 .map(a -> a.getAuthority().replace("ROLE_", ""))
-                .orElse("USER");
+                .orElse("CORO");
         return ResponseEntity.ok(new CurrentUser(auth.getName(), role));
     }
 }

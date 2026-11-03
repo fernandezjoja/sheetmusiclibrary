@@ -26,7 +26,8 @@ public record ScoreListItem(
         /**
          * {@code hasPdf} and {@code hasMscz} are true only when the score has
          * that file AND the requester has permission to download it
-         * (COLLABORATOR or higher). Same per-perms gating as ScoreView.
+         * (PDF: CORO, DEPARTAMENTO, ADMIN; .mscz: DEPARTAMENTO, ADMIN).
+         * Same per-perms gating as ScoreView.
          */
         boolean hasPdf,
         boolean hasMscz) {
