@@ -73,6 +73,8 @@
   display: flex;
   gap: 28px;
   align-items: baseline;
+  /* Stays on the right when the wordmark is hidden (landing page). */
+  margin-left: auto;
 }
 
 /* On phones the logged-in nav (Biblioteca · Administración · Cerrar sesión)
@@ -165,4 +167,45 @@
 .player-notice > summary:focus-visible {
   outline: 2px solid var(--accent-border);
   outline-offset: -2px;
+}
+
+/* Public landing page (pages/Home.tsx): the wordmark at a larger size, then
+   the login button. */
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 0;
+}
+.home-logo {
+  display: block;
+  height: 120px;
+  width: auto;
+}
+.home-name {
+  margin: 24px 0 0;
+  font-family: var(--heading);
+  font-size: 3rem;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--heading-color);
+}
+.home-desc {
+  margin: 8px 0 0;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+.home-login {
+  margin-top: 32px;
+}
+@media (max-width: 400px) {
+  .home-logo {
+    height: 96px;
+  }
+  .home-name {
+    font-size: 2.4rem;
+  }
 }
