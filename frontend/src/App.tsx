@@ -1,10 +1,17 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
+import logoSymbol from './assets/logo-symbol.svg'
 import { useAuth } from './useAuth'
+
+// Footer is hidden for now. Set to true to show it.
+const SHOW_FOOTER: boolean = false
 
 function App() {
   const { user, loading, logout } = useAuth()
   const navigate = useNavigate()
+  // The landing page shows the logo and name large, so the header leaves
+  // them out there.
+  const isHome = useLocation().pathname === '/'
 
   const handleLogout = async () => {
     await logout()
@@ -14,11 +21,23 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <Link to="/" className="app-title">Biblioteca de Música Litúrgica</Link>
-        <nav className="app-nav">
-          <Link to="/biblioteca" className="app-nav-link">
-            Biblioteca
+        {!isHome && (
+          <Link to="/" className="app-title">
+            <img src={logoSymbol} alt="" className="app-title-logo" />
+            <span className="app-title-text">
+              <span className="app-title-name">Kliros</span>
+              <span className="app-title-desc">Música Litúrgica Ortodoxa</span>
+            </span>
           </Link>
+        )}
+        <nav className="app-nav">
+          {/* Anonymous visitors only get the login link: the library would
+              send them to /login anyway. */}
+          {user && (
+            <Link to="/biblioteca" className="app-nav-link">
+              Biblioteca
+            </Link>
+          )}
           {/* Admin link is intentionally not shown to anonymous viewers — the
               URL is reachable directly, but we don't advertise it. */}
           {user?.role === 'ADMIN' && (
@@ -46,6 +65,14 @@ function App() {
       <main className="app-main">
         <Outlet />
       </main>
+      {SHOW_FOOTER && (
+        <footer className="app-footer">
+          <p>
+            Diócesis de México de la Iglesia Ortodoxa en América, OCA (Orthodox
+            Church in America)
+          </p>
+        </footer>
+      )}
     </div>
   )
 }

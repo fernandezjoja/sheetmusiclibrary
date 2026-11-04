@@ -11,7 +11,7 @@ export default function AdminHub() {
       <section style={{ marginBottom: 32 }}>
         <h3 style={{ marginTop: 0 }}>Subir</h3>
         <p>Agregar una nueva partitura a la biblioteca.</p>
-        <p>
+        <p style={{ marginTop: 12 }}>
           <Link to="/admin/upload" className="btn-primary">
             + Subir nueva partitura
           </Link>

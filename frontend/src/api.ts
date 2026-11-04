@@ -32,7 +32,7 @@ export type Score = {
   musicxmlPath: string | null
   /**
    * `hasPdf` and `hasMscz` are true only when the score has that file *and*
-   * the requester has permission to download it (COLLABORATOR or higher).
+   * the requester's role may download it (PDF: CORO, DEPARTAMENTO, ADMIN; .mscz: DEPARTAMENTO, ADMIN).
    * Server-set; the frontend just renders the download UI when true.
    */
   hasPdf: boolean
@@ -99,7 +99,17 @@ export type UpdateScoreParams = {
   mscz?: File | null
 }
 
-export type CurrentUser = { username: string; role: 'USER' | 'ADMIN' }
+export type UserRole = 'CORO' | 'PRUEBA' | 'DEPARTAMENTO' | 'ADMIN'
+
+/** Spanish UI label for each role. */
+export const ROLE_LABELS: Record<UserRole, string> = {
+  CORO: 'Coro local',
+  PRUEBA: 'Versiones de prueba',
+  DEPARTAMENTO: 'Departamento de música',
+  ADMIN: 'Administrador',
+}
+
+export type CurrentUser = { username: string; role: UserRole }
 
 export class ApiError extends Error {
   status: number

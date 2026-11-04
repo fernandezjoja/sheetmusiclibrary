@@ -14,9 +14,9 @@ import com.sheetmusic.security.Permissions;
  * it. Frontend renders each download button on its flag alone, no client-side
  * role logic.</li>
  * <li>{@code references} is empty for callers without
- * {@link Permissions#canSeeReferences()}. Recordings are visible to all
- * (including anonymous, on published scores) since the streaming endpoint
- * is intentionally public for parishioner audio playback.</li>
+ * {@link Permissions#canSeeReferences()}. Recordings are visible to every
+ * logged-in role (on published scores, and on unpublished scores for roles
+ * with {@link Permissions#canSeeUnpublished()}).</li>
  * </ul>
  *
  * <p>This DTO exists primarily to avoid mutating the JPA entity in-place: with

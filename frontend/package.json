@@ -11,16 +11,9 @@
   },
   "dependencies": {
     "@coderline/alphatab": "^1.8.4",
-    "opensheetmusicdisplay": "^1.9.7",
-    "osmd-audio-player": "^0.7.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2"
-  },
-  "overrides": {
-    "osmd-audio-player": {
-      "opensheetmusicdisplay": "$opensheetmusicdisplay"
-    }
   },
   "devDependencies": {
     "@coderline/alphatab-vite": "^1.8.4",

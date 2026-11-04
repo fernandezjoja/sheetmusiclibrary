@@ -20,7 +20,9 @@ const inputStyle = {
   font: 'inherit',
 }
 
-type LocationState = { from?: { pathname?: string } } | null
+type LocationState = {
+  from?: { pathname?: string; search?: string; hash?: string }
+} | null
 
 export default function LoginPage() {
   usePageTitle('Iniciar sesión')
@@ -34,9 +36,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Where to send the user after a successful login. RequireAuth stashes the
-  // attempted route in location.state so we can return them to it.
-  const from =
-    (location.state as LocationState)?.from?.pathname ?? '/'
+  // attempted route in location.state so we can return them to it. Without
+  // one (they opened /login directly), they go to the library.
+  const attempted = (location.state as LocationState)?.from
+  const from = attempted?.pathname
+    ? `${attempted.pathname}${attempted.search ?? ''}${attempted.hash ?? ''}`
+    : '/biblioteca'
 
   const canSubmit = username.length > 0 && password.length > 0 && !submitting
 
@@ -65,7 +70,7 @@ export default function LoginPage() {
         <div
           role="alert"
           style={{
-            border: '1px solid #c44',
+            border: '1px solid var(--rubric)',
             borderRadius: 4,
             padding: 12,
             marginBottom: 16,

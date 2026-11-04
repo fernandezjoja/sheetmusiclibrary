@@ -34,14 +34,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Auth flow + identity probe — anyone can hit these
                         .requestMatchers("/api/login", "/api/logout", "/api/me").permitAll()
-                        // PDF and .mscz downloads are collaborator-tier perks.
-                        // Must be declared *before* the catch-all
-                        // /api/scores/** permitAll below, since first-match wins.
-                        .requestMatchers("/api/scores/*/pdf", "/api/scores/*/mscz")
-                        .hasAnyRole("COLLABORATOR", "ADMIN")
-                        // Public reads (filtered server-side: anonymous see
-                        // published-only, authenticated users see all)
-                        .requestMatchers("/api/scores", "/api/scores/**").permitAll()
+                        // Download gates. Must be declared *before* the
+                        // /api/scores/** rule below, since first-match wins.
+                        // Keep in sync with Permissions.forRole.
+                        .requestMatchers("/api/scores/*/pdf")
+                        .hasAnyRole("CORO", "DEPARTAMENTO", "ADMIN")
+                        .requestMatchers("/api/scores/*/mscz")
+                        .hasAnyRole("DEPARTAMENTO", "ADMIN")
+                        // Score reads require login. Unpublished scores are
+                        // filtered server-side by Permissions.canSeeUnpublished.
+                        .requestMatchers("/api/scores", "/api/scores/**").authenticated()
                         // Static SPA, all other paths
                         .anyRequest().permitAll())
 

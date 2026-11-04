@@ -34,7 +34,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserRole role = UserRole.USER;
+    private UserRole role = UserRole.CORO;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();

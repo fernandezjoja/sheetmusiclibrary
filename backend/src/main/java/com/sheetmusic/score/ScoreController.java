@@ -55,8 +55,9 @@ public class ScoreController {
     }
 
     /**
-     * Streams the PDF. Like {@link #getMscz}, the COLLABORATOR/ADMIN role gate
-     * lives in {@link com.sheetmusic.security.SecurityConfig}.
+     * Streams the PDF. Like {@link #getMscz}, the role gate
+     * (CORO/DEPARTAMENTO/ADMIN) lives in
+     * {@link com.sheetmusic.security.SecurityConfig}.
      */
     @GetMapping("/{id}/pdf")
     public ResponseEntity<Resource> getPdf(@PathVariable Long id) {
@@ -64,11 +65,10 @@ public class ScoreController {
     }
 
     /**
-     * Streams the .mscz archive. The COLLABORATOR/ADMIN role gate lives in
+     * Streams the .mscz archive. The DEPARTAMENTO/ADMIN role gate lives in
      * {@link com.sheetmusic.security.SecurityConfig} (matcher-level), so this
      * method only runs for an authorized caller. The published-or-not 404
-     * still applies — anonymous never reaches here, but a logged-in
-     * COLLABORATOR/ADMIN gets the same visibility rules as MusicXML.
+     * still applies with the same visibility rules as MusicXML.
      */
     @GetMapping("/{id}/mscz")
     public ResponseEntity<Resource> getMscz(@PathVariable Long id) {
@@ -79,7 +79,8 @@ public class ScoreController {
      * Streams an MP3 recording with byte-range support so {@code <audio>} players
      * can seek. 404 (via {@link AttachmentNotFoundException}) for any of:
      * unknown recording id, recording belongs to a different score, or recording
-     * belongs to an unpublished score and the caller is anonymous — same response
+     * belongs to an unpublished score and the caller's role can't see unpublished
+     * scores — same response
      * shape across all three so existence isn't leaked.
      */
     @GetMapping("/{id}/recordings/{rid}")

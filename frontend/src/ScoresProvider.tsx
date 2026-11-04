@@ -22,6 +22,8 @@ import { ScoresContext } from './scores'
  *     the user it was loaded for.
  *   - `useInvalidateScores` is called after an upload, edit or delete.
  *
+ * Anonymous visitors get no list: `/api/scores` requires login.
+ *
  * Nothing is persisted: the list lives in this tab's memory only.
  */
 export function ScoresProvider({ children }: { children: ReactNode }) {
@@ -41,7 +43,7 @@ export function ScoresProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Wait for the session check, so the first request is made as the right
     // user and isn't thrown away a moment later.
-    if (loading || requests === 0 || fresh) return
+    if (loading || !user || requests === 0 || fresh) return
     if (inFlight.current === key) return
     inFlight.current = key
     api.listScores().then(
@@ -59,7 +61,7 @@ export function ScoresProvider({ children }: { children: ReactNode }) {
         setFailed({ key, message: e.message })
       },
     )
-  }, [loading, requests, fresh, key])
+  }, [loading, user, requests, fresh, key])
 
   const request = useCallback(() => setRequests((n) => n + 1), [])
   const invalidate = useCallback(() => setVersion((v) => v + 1), [])

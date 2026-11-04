@@ -167,7 +167,7 @@ public class ScoreAttachmentsService {
     /**
      * Used by the public {@code GET /api/scores/{id}/recordings/{rid}} endpoint.
      * 404s for: missing score, missing recording, recording belongs to a different
-     * score, or recording belongs to an unpublished score and the caller is anonymous.
+     * score, or recording belongs to an unpublished score and the caller can't see unpublished scores.
      */
     @Transactional(readOnly = true)
     public ScoreRecording getRecordingForStreaming(Long scoreId, Long recordingId, boolean includeUnpublished) {

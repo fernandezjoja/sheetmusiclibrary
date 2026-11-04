@@ -260,8 +260,8 @@ export default function AdminReferencesSection({ score, onChange }: Props) {
                         onClick={() => handleRemove(ref.id, display)}
                         style={{
                           background: 'transparent',
-                          border: '1px solid #c44',
-                          color: '#c44',
+                          border: '1px solid var(--rubric)',
+                          color: 'var(--rubric)',
                           borderRadius: 3,
                           padding: '2px 8px',
                           cursor: 'pointer',
@@ -341,7 +341,7 @@ export default function AdminReferencesSection({ score, onChange }: Props) {
       </form>
 
       {error && (
-        <p role="alert" style={{ color: '#c44', marginTop: 8, fontSize: '0.9rem' }}>
+        <p role="alert" style={{ color: 'var(--rubric)', marginTop: 8, fontSize: '0.9rem' }}>
           {error}
         </p>
       )}
